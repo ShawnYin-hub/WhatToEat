@@ -1,6 +1,10 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { getNavigationUrl, copyAddressToClipboard } from '../utils/navigation'
 
-function ResultModal({ isOpen, restaurant, onClose, onChangeRestaurant }) {
+function ResultModal({ isOpen, restaurant, onClose, onChangeRestaurant, mapService = 'amap' }) {
+  const [copied, setCopied] = useState(false)
+  
   if (!isOpen || !restaurant) return null
 
   // 渲染星级评分
@@ -34,14 +38,17 @@ function ResultModal({ isOpen, restaurant, onClose, onChangeRestaurant }) {
     )
   }
 
-  // 生成高德地图导航链接
-  const getNavigationUrl = () => {
-    if (!restaurant.location) return null
-    // 高德地图网页版导航链接
-    return `https://uri.amap.com/navigation?to=${restaurant.location.lng},${restaurant.location.lat},${encodeURIComponent(restaurant.name)}&mode=car&src=webapp`
-  }
+  // 生成导航链接（根据地图服务类型）
+  const navigationUrl = getNavigationUrl(restaurant, mapService)
 
-  const navigationUrl = getNavigationUrl()
+  // 处理复制地址
+  const handleCopyAddress = async () => {
+    const success = await copyAddressToClipboard(restaurant)
+    if (success) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -207,7 +214,7 @@ function ResultModal({ isOpen, restaurant, onClose, onChangeRestaurant }) {
                     >
                       换一家
                     </motion.button>
-                    {navigationUrl && (
+                    {navigationUrl ? (
                       <motion.a
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -218,6 +225,15 @@ function ResultModal({ isOpen, restaurant, onClose, onChangeRestaurant }) {
                       >
                         带我导航
                       </motion.a>
+                    ) : (
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleCopyAddress}
+                        className="flex-1 min-h-[44px] py-3 px-4 sm:px-6 bg-apple-text text-white rounded-xl font-medium hover:bg-opacity-90 active:bg-opacity-80 transition-colors shadow-lg touch-manipulation flex items-center justify-center"
+                      >
+                        {copied ? '✓ 已复制' : '复制地址'}
+                      </motion.button>
                     )}
                   </motion.div>
                 </div>

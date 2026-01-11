@@ -17,6 +17,28 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
   const [slotKey, setSlotKey] = useState(0) // 用于强制重新渲染 SlotMachine
 
   const formatRestaurant = (restaurant) => {
+    // 处理 location：高德地图返回字符串 "lng,lat"，OSM 返回对象 { latitude, longitude }
+    let location = null
+    if (restaurant.location) {
+      if (typeof restaurant.location === 'string') {
+        // 高德地图格式："经度,纬度"
+        const [lng, lat] = restaurant.location.split(',')
+        if (lng && lat) {
+          location = { lng, lat }
+        }
+      } else if (typeof restaurant.location === 'object') {
+        // OSM 格式：{ latitude, longitude } 或 { lng, lat }
+        if (restaurant.location.latitude && restaurant.location.longitude) {
+          location = {
+            latitude: restaurant.location.latitude,
+            longitude: restaurant.location.longitude,
+          }
+        } else if (restaurant.location.lng && restaurant.location.lat) {
+          location = restaurant.location
+        }
+      }
+    }
+
     return {
       name: restaurant.name || '未知餐厅',
       type: restaurant.type || '',
@@ -24,12 +46,7 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
       distance: parseInt(restaurant.distance || '0', 10),
       tel: restaurant.tel || '',
       rating: restaurant.biz_ext?.rating || restaurant.rating || null,
-      location: restaurant.location
-        ? {
-            lng: restaurant.location.split(',')[0],
-            lat: restaurant.location.split(',')[1],
-          }
-        : null,
+      location,
     }
   }
 
@@ -214,6 +231,7 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
           setSelectedRestaurant(null)
         }}
         onChangeRestaurant={handleChangeRestaurant}
+        mapService={mapService}
       />
     </>
   )
