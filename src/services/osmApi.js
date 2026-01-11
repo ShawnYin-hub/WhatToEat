@@ -93,7 +93,7 @@ export async function fetchOSMRestaurants({ location, radius, keywords = [] }) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query: query }),
     })
 
     if (!response.ok) {

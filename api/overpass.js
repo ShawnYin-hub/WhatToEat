@@ -13,6 +13,7 @@ export default async function handler(req, res) {
     let queryString = null
 
     // 处理不同的请求体格式
+    // Vercel Serverless Functions 会自动解析 JSON body
     if (typeof req.body === 'string') {
       // 如果请求体是字符串，尝试解析 JSON
       try {
@@ -23,12 +24,27 @@ export default async function handler(req, res) {
         queryString = req.body
       }
     } else if (req.body && typeof req.body === 'object') {
-      // 如果请求体是对象
+      // 如果请求体是对象（Vercel 会自动解析 JSON）
       queryString = req.body.query || req.body
+      
+      // 如果 queryString 仍然是对象，尝试转换为字符串
+      if (typeof queryString !== 'string') {
+        queryString = JSON.stringify(queryString)
+      }
     }
 
     if (!queryString || typeof queryString !== 'string') {
-      return res.status(400).json({ error: 'Query is required and must be a string' })
+      console.error('Invalid query format:', { 
+        bodyType: typeof req.body, 
+        body: req.body,
+        queryStringType: typeof queryString,
+        queryString 
+      })
+      return res.status(400).json({ 
+        error: 'Query is required and must be a string',
+        received: typeof req.body,
+        body: req.body
+      })
     }
 
     // 调用 Overpass API（增加超时时间）
