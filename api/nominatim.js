@@ -10,15 +10,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { query } = req.query
+    // 获取查询参数
+    const queryParam = req.query.q || req.query.query
     
-    if (!query) {
-      return res.status(400).json({ error: 'Query parameter is required' })
+    if (!queryParam) {
+      return res.status(400).json({ error: 'Query parameter "q" is required' })
     }
 
     // 构建 Nominatim API URL
     const params = new URLSearchParams({
-      q: query,
+      q: queryParam,
       format: 'json',
       addressdetails: '1',
       limit: '20',
