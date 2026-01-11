@@ -3,14 +3,9 @@
  * 适用于全球范围，包括海外地区
  */
 
-// 开发环境使用代理，生产环境直接调用（生产环境需要后端代理或使用其他方案）
-const NOMINATIM_BASE_URL = import.meta.env.DEV
-  ? '/api/nominatim'
-  : 'https://nominatim.openstreetmap.org'
-
-const OVERPASS_API_URL = import.meta.env.DEV
-  ? '/api/overpass/api/interpreter'
-  : 'https://overpass-api.de/api/interpreter'
+// 开发环境和生产环境都使用代理（Vercel Serverless Functions）
+const NOMINATIM_BASE_URL = '/api/nominatim'
+const OVERPASS_API_URL = '/api/overpass'
 
 /**
  * 搜索地点（使用 Nominatim 地理编码API）
