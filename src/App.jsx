@@ -7,7 +7,7 @@ import RangeSlider from './components/RangeSlider'
 import SelectButton from './components/SelectButton'
 
 function App() {
-  const [mapService, setMapService] = useState('amap') // 'amap' 或 'google'
+  const [mapService, setMapService] = useState('amap') // 'amap' 或 'osm'
   const [selectedFoods, setSelectedFoods] = useState([])
   const [range, setRange] = useState(2000) // 默认 2km
   const [location, setLocation] = useState(null)

@@ -29,17 +29,37 @@ export default async function handler(req, res) {
     const url = `https://nominatim.openstreetmap.org/search?${params.toString()}`
 
     // 调用 Nominatim API
+    // 注意：Nominatim API 严格要求设置 User-Agent，且不能是默认的浏览器 User-Agent
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'User-Agent': 'WhatToEatToday/1.0 (Contact: contact@example.com)',
+        'User-Agent': 'Mozilla/5.0 (compatible; WhatToEatToday/1.0; +https://what-to-eat-today.vercel.app)',
         'Accept': 'application/json',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
       },
     })
 
     if (!response.ok) {
+      // 尝试获取错误详情
+      let errorDetail = response.statusText
+      try {
+        const errorText = await response.text()
+        if (errorText) {
+          errorDetail = errorText.substring(0, 200) // 限制长度
+        }
+      } catch (e) {
+        // 忽略错误
+      }
+      
+      console.error('Nominatim API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        detail: errorDetail
+      })
+      
       return res.status(response.status).json({ 
-        error: `Nominatim API error: ${response.statusText}` 
+        error: `Nominatim API error: ${response.statusText}`,
+        detail: errorDetail
       })
     }
 
