@@ -99,7 +99,29 @@ export async function fetchOSMRestaurants({ location, radius, keywords = [] }) {
     if (!response.ok) {
       const errorText = await response.text()
       console.error('Overpass API 错误响应:', errorText)
-      throw new Error(`请求失败: ${response.status} ${response.statusText}`)
+      
+      // 尝试解析错误响应（可能是 JSON 格式的错误信息）
+      let errorMessage = `请求失败: ${response.status} ${response.statusText}`
+      try {
+        const errorData = JSON.parse(errorText)
+        if (errorData.error) {
+          errorMessage = errorData.error
+          // 如果错误信息包含 HTML 错误页面的提示，提供更友好的消息
+          if (errorMessage.includes('HTML error page') || errorMessage.includes('ODbL')) {
+            errorMessage = 'Overpass API 暂时无法访问，请稍后再试或尝试使用高德地图服务'
+          }
+        }
+      } catch (e) {
+        // 如果不是 JSON，使用原始错误文本的前200个字符
+        if (errorText && errorText.length > 0) {
+          const preview = errorText.substring(0, 200)
+          if (preview.includes('ODbL') || preview.includes('openstreetmap.org')) {
+            errorMessage = 'Overpass API 暂时无法访问，请稍后再试或尝试使用高德地图服务'
+          }
+        }
+      }
+      
+      throw new Error(errorMessage)
     }
 
     const data = await response.json()
