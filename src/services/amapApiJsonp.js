@@ -11,21 +11,44 @@ function jsonp(url) {
   return new Promise((resolve, reject) => {
     const callbackName = `amap_callback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const script = document.createElement('script')
+    let timeoutId = null
+    
+    // 设置超时
+    timeoutId = setTimeout(() => {
+      cleanup()
+      reject(new Error('JSONP 请求超时'))
+    }, 30000) // 30秒超时
+    
+    const cleanup = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+        timeoutId = null
+      }
+      if (window[callbackName]) {
+        delete window[callbackName]
+      }
+      if (script.parentNode) {
+        script.parentNode.removeChild(script)
+      }
+    }
     
     window[callbackName] = (data) => {
-      delete window[callbackName]
-      document.body.removeChild(script)
+      cleanup()
       resolve(data)
     }
 
     script.onerror = () => {
-      delete window[callbackName]
-      document.body.removeChild(script)
+      cleanup()
       reject(new Error('JSONP 请求失败'))
     }
 
-    script.src = `${url}&callback=${callbackName}`
-    document.body.appendChild(script)
+    try {
+      script.src = `${url}&callback=${callbackName}`
+      document.body.appendChild(script)
+    } catch (error) {
+      cleanup()
+      reject(error)
+    }
   })
 }
 
