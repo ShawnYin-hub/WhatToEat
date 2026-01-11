@@ -75,14 +75,15 @@ export async function fetchOSMRestaurants({ location, radius, keywords = [] }) {
     // 构建 Overpass QL 查询语句
     // 使用更简单可靠的查询方式
     
-    // Overpass QL 查询 - 简化版本，更稳定
+    // Overpass QL 查询 - 优化版本，添加限制避免超时
+    // 增加超时时间到 60 秒，并限制返回数量为 50 个（减少数据量）
     const query = `
-      [out:json][timeout:25];
+      [out:json][timeout:60];
       (
         node["amenity"~"^(restaurant|cafe|fast_food|bar|pub|biergarten|food_court|ice_cream)$"](around:${radius},${location.latitude},${location.longitude});
         way["amenity"~"^(restaurant|cafe|fast_food|bar|pub|biergarten|food_court|ice_cream)$"](around:${radius},${location.latitude},${location.longitude});
       );
-      out center;
+      out center limit 50;
     `.trim()
 
     console.log('OSM Overpass 查询:', query.substring(0, 200) + '...')

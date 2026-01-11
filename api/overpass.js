@@ -31,15 +31,33 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Query is required and must be a string' })
     }
 
-    // 调用 Overpass API
-    const response = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain',
-        'User-Agent': 'WhatToEatToday/1.0',
-      },
-      body: queryString,
-    })
+    // 调用 Overpass API（增加超时时间）
+    // 使用 AbortController 设置 70 秒超时（比查询的 60 秒稍长）
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 70000) // 70 秒超时
+    
+    let response
+    try {
+      response = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain',
+          'User-Agent': 'Mozilla/5.0 (compatible; WhatToEatToday/1.0; +https://what-to-eat-today.vercel.app)',
+        },
+        body: queryString,
+        signal: controller.signal,
+      })
+      clearTimeout(timeoutId)
+    } catch (error) {
+      clearTimeout(timeoutId)
+      if (error.name === 'AbortError') {
+        return res.status(504).json({ 
+          error: 'Overpass API timeout: Query took too long',
+          suggestion: 'Try reducing the search radius'
+        })
+      }
+      throw error
+    }
 
     if (!response.ok) {
       const errorText = await response.text()
