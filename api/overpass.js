@@ -33,11 +33,19 @@ export default async function handler(req, res) {
       }
     } else if (req.body && typeof req.body === 'object') {
       // 如果请求体是对象（Vercel 会自动解析 JSON）
-      queryString = req.body.query || req.body
-      
-      // 如果 queryString 仍然是对象，尝试转换为字符串
-      if (typeof queryString !== 'string') {
-        queryString = String(queryString)
+      // 只使用 req.body.query，如果不存在则返回错误
+      if (req.body.query && typeof req.body.query === 'string') {
+        queryString = req.body.query
+      } else {
+        console.error('Request body object does not contain valid query string:', {
+          bodyKeys: Object.keys(req.body),
+          queryType: typeof req.body.query,
+          queryValue: req.body.query
+        })
+        return res.status(400).json({ 
+          error: 'Request body must contain a "query" property with a string value',
+          received: Object.keys(req.body)
+        })
       }
     }
 
@@ -91,15 +99,52 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errorText = await response.text()
+      const contentType = response.headers.get('content-type') || ''
+      
+      // 检查是否是 HTML 错误页面
+      const isHtmlError = contentType.includes('text/html') || errorText.trim().startsWith('<?xml') || errorText.trim().startsWith('<!DOCTYPE')
+      
       console.error('Overpass API error:', {
         status: response.status,
         statusText: response.statusText,
+        contentType: contentType,
+        isHtmlError: isHtmlError,
         errorText: errorText.substring(0, 500), // 限制长度
         queryPreview: queryString.substring(0, 200) // 查询预览
       })
+      
+      // 如果是 HTML 错误，尝试提取错误信息
+      let errorMessage = response.statusText
+      if (isHtmlError) {
+        // 尝试从 HTML 中提取错误信息
+        const errorMatch = errorText.match(/<p[^>]*>(.*?)<\/p>/i) || errorText.match(/<h1[^>]*>(.*?)<\/h1>/i)
+        if (errorMatch) {
+          errorMessage = errorMatch[1].replace(/<[^>]*>/g, '').trim()
+        }
+        // 如果没有找到，使用通用的错误消息
+        if (!errorMessage || errorMessage === response.statusText) {
+          errorMessage = 'Overpass API returned an error page. The query may be invalid or the server is experiencing issues.'
+        }
+      }
+      
       return res.status(response.status).json({ 
-        error: `Overpass API error: ${response.statusText}`,
-        detail: errorText.substring(0, 200)
+        error: `Overpass API error: ${errorMessage}`,
+        detail: isHtmlError ? 'HTML error page returned' : errorText.substring(0, 200),
+        status: response.status
+      })
+    }
+
+    // 检查响应内容类型
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const responseText = await response.text()
+      console.error('Overpass API returned non-JSON response:', {
+        contentType: contentType,
+        responsePreview: responseText.substring(0, 500)
+      })
+      return res.status(502).json({
+        error: 'Overpass API returned non-JSON response',
+        contentType: contentType
       })
     }
 
