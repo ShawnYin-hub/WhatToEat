@@ -17,7 +17,13 @@ export default async function handler(req, res) {
     }
 
     // 确保 query 是字符串格式（Overpass QL 查询语句）
-    const queryString = typeof query === 'string' ? query : query
+    // 如果收到 JSON 对象 {query: "..."}，提取 query 字段；如果已经是字符串，直接使用
+    let queryString = query
+    if (typeof query === 'object' && query.query) {
+      queryString = query.query
+    } else if (typeof query !== 'string') {
+      return res.status(400).json({ error: 'Query must be a string' })
+    }
 
     // 调用 Overpass API
     const response = await fetch('https://overpass-api.de/api/interpreter', {
