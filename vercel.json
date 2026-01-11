@@ -1,0 +1,20 @@
+{
+  "functions": {
+    "api/nominatim.js": {
+      "maxDuration": 10
+    },
+    "api/overpass.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/nominatim",
+      "destination": "/api/nominatim"
+    },
+    {
+      "source": "/api/overpass",
+      "destination": "/api/overpass"
+    }
+  ]
+}
