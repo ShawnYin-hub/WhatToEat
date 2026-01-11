@@ -12,6 +12,14 @@ export default async function handler(req, res) {
   try {
     let queryString = null
 
+    // 调试：记录接收到的请求
+    console.log('Overpass API 请求:', {
+      method: req.method,
+      bodyType: typeof req.body,
+      bodyKeys: req.body && typeof req.body === 'object' ? Object.keys(req.body) : null,
+      bodyPreview: typeof req.body === 'string' ? req.body.substring(0, 200) : JSON.stringify(req.body).substring(0, 200)
+    })
+
     // 处理不同的请求体格式
     // Vercel Serverless Functions 会自动解析 JSON body
     if (typeof req.body === 'string') {
@@ -29,9 +37,15 @@ export default async function handler(req, res) {
       
       // 如果 queryString 仍然是对象，尝试转换为字符串
       if (typeof queryString !== 'string') {
-        queryString = JSON.stringify(queryString)
+        queryString = String(queryString)
       }
     }
+
+    console.log('解析后的 queryString:', {
+      type: typeof queryString,
+      length: queryString ? queryString.length : 0,
+      preview: queryString ? queryString.substring(0, 200) : null
+    })
 
     if (!queryString || typeof queryString !== 'string') {
       console.error('Invalid query format:', { 
@@ -77,9 +91,15 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Overpass API error:', errorText)
+      console.error('Overpass API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        errorText: errorText.substring(0, 500), // 限制长度
+        queryPreview: queryString.substring(0, 200) // 查询预览
+      })
       return res.status(response.status).json({ 
-        error: `Overpass API error: ${response.statusText}` 
+        error: `Overpass API error: ${response.statusText}`,
+        detail: errorText.substring(0, 200)
       })
     }
 
