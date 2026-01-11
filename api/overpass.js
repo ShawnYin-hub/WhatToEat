@@ -10,19 +10,25 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { query } = req.body
+    let queryString = null
 
-    if (!query) {
-      return res.status(400).json({ error: 'Query is required' })
+    // 处理不同的请求体格式
+    if (typeof req.body === 'string') {
+      // 如果请求体是字符串，尝试解析 JSON
+      try {
+        const parsed = JSON.parse(req.body)
+        queryString = parsed.query || parsed
+      } catch (e) {
+        // 如果不是 JSON，直接使用字符串
+        queryString = req.body
+      }
+    } else if (req.body && typeof req.body === 'object') {
+      // 如果请求体是对象
+      queryString = req.body.query || req.body
     }
 
-    // 确保 query 是字符串格式（Overpass QL 查询语句）
-    // 如果收到 JSON 对象 {query: "..."}，提取 query 字段；如果已经是字符串，直接使用
-    let queryString = query
-    if (typeof query === 'object' && query.query) {
-      queryString = query.query
-    } else if (typeof query !== 'string') {
-      return res.status(400).json({ error: 'Query must be a string' })
+    if (!queryString || typeof queryString !== 'string') {
+      return res.status(400).json({ error: 'Query is required and must be a string' })
     }
 
     // 调用 Overpass API
