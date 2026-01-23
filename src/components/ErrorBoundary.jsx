@@ -1,4 +1,5 @@
 import React from 'react'
+import i18n from '../i18n'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -24,16 +25,16 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       // 你可以自定义降级后的 UI 并渲染
       return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="safe-area-container bg-gray-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full">
-            <h2 className="text-2xl font-bold text-red-600 mb-4">出现错误</h2>
+            <h2 className="text-2xl font-bold text-red-600 mb-4">{i18n.t('error.title')}</h2>
             <p className="text-gray-700 mb-4">
-              应用遇到了一个错误。请刷新页面重试。
+              {i18n.t('error.desc')}
             </p>
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mt-4">
                 <summary className="cursor-pointer text-sm text-gray-500 mb-2">
-                  错误详情（开发环境）
+                  {i18n.t('error.details')}
                 </summary>
                 <pre className="text-xs bg-gray-100 p-3 rounded overflow-auto max-h-64">
                   {this.state.error.toString()}
@@ -45,7 +46,7 @@ class ErrorBoundary extends React.Component {
               onClick={() => window.location.reload()}
               className="mt-4 w-full bg-apple-text text-white py-2 px-4 rounded-lg hover:bg-opacity-90 transition-colors"
             >
-              刷新页面
+              {i18n.t('error.reload')}
             </button>
           </div>
         </div>

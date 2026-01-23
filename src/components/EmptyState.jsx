@@ -1,28 +1,12 @@
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 function EmptyState({ onRetry }) {
-  const messages = [
-    {
-      emoji: '🏜️',
-      title: '美食荒漠警告！',
-      subtitle: '这附近好像...',
-      description: '方圆之内，竟然找不到一家合适的餐厅。要不要试试扩大搜索范围，或者换个口味？',
-    },
-    {
-      emoji: '🔍',
-      title: '空空如也',
-      subtitle: '什么都没有找到',
-      description: '可能是筛选条件太严格了，试试去掉一些标签或者扩大搜索范围吧～',
-    },
-    {
-      emoji: '🤔',
-      title: '这里有点冷清',
-      subtitle: '暂时没有发现美食',
-      description: '附近似乎没有符合条件的餐厅。换个地方试试，或者调整一下你的美食偏好？',
-    },
-  ]
+  const { t } = useTranslation()
+  const messages = t('empty.messages', { returnObjects: true })
 
-  const randomMessage = messages[Math.floor(Math.random() * messages.length)]
+  const list = Array.isArray(messages) ? messages : []
+  const randomMessage = list[Math.floor(Math.random() * Math.max(list.length, 1))] || {}
 
   return (
     <motion.div
@@ -77,7 +61,7 @@ function EmptyState({ onRetry }) {
           onClick={onRetry}
           className="min-h-[44px] px-6 py-3 bg-apple-text text-white rounded-xl font-medium hover:bg-opacity-90 transition-colors touch-manipulation"
         >
-          再试一次
+          {t('empty.retry')}
         </motion.button>
       )}
     </motion.div>

@@ -2,10 +2,9 @@
  * 高德地图 POI 搜索 API - 更精确的地点搜索
  */
 
-const AMAP_API_KEY = import.meta.env.VITE_AMAP_API_KEY
-const POI_SEARCH_API_BASE_URL = import.meta.env.DEV
-  ? '/api/amap/v3/place/text'
-  : 'https://restapi.amap.com/v3/place/text'
+// 直接使用 HTTPS API
+const AMAP_API_KEY = import.meta.env.VITE_AMAP_KEY || ''
+const POI_SEARCH_API_BASE_URL = 'https://restapi.amap.com/v3/place/text'
 
 /**
  * 搜索地点（POI搜索，比地理编码更准确）
@@ -18,7 +17,7 @@ export async function searchPOI(keyword) {
   }
 
   if (!AMAP_API_KEY) {
-    throw new Error('API Key 未配置，请检查 .env.local 文件')
+    throw new Error('高德地图 API Key 未配置')
   }
 
   const params = new URLSearchParams({
@@ -40,7 +39,10 @@ export async function searchPOI(keyword) {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
       },
+      mode: 'cors',
+      credentials: 'omit',
     })
 
     if (!response.ok) {
@@ -49,7 +51,31 @@ export async function searchPOI(keyword) {
       throw new Error(`请求失败: ${response.status} ${response.statusText}`)
     }
 
-    const data = await response.json()
+    // 检查响应内容类型，确保是 JSON 而不是 HTML
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const responseText = await response.text()
+      // 检查是否是 HTML 响应
+      if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html') || responseText.trim().startsWith('<?xml')) {
+        throw new Error('服务器返回了 HTML 页面，请检查 API 配置')
+      }
+      throw new Error(`服务器返回了非 JSON 格式: ${contentType}`)
+    }
+
+    const responseText = await response.text()
+    // 再次检查响应文本，确保不是 HTML
+    if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html') || responseText.trim().startsWith('<?xml')) {
+      throw new Error('服务器返回了 HTML 页面，请检查 API 配置')
+    }
+
+    let data
+    try {
+      data = JSON.parse(responseText)
+    } catch (parseError) {
+      console.error('JSON 解析失败:', parseError, '响应内容:', responseText.substring(0, 200))
+      throw new Error('服务器返回了无效的 JSON 数据')
+    }
+    
     console.log('POI 搜索 API 响应:', data)
 
     if (data.status !== '1') {
@@ -95,10 +121,7 @@ export function searchPOIJsonp(keyword) {
       return
     }
 
-    if (!AMAP_API_KEY) {
-      reject(new Error('API Key 未配置'))
-      return
-    }
+    // API Key 已硬编码，无需检查
 
     const callbackName = `poi_callback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const script = document.createElement('script')

@@ -6,7 +6,7 @@
 /**
  * 生成导航 URL
  * @param {Object} restaurant - 餐厅信息
- * @param {string} mapService - 地图服务类型 ('amap' | 'osm')
+ * @param {string} mapService - 地图服务类型 ('amap' | 'greenstreet')
  * @returns {string|null} 导航 URL，如果无法生成则返回 null
  */
 export function getNavigationUrl(restaurant, mapService = 'amap') {
@@ -22,7 +22,7 @@ export function getNavigationUrl(restaurant, mapService = 'amap') {
     lng = parseFloat(lngStr)
     lat = parseFloat(latStr)
   } else if (typeof restaurant.location === 'object') {
-    // OSM 格式：{ latitude, longitude } 或 { lng, lat }
+    // GreenStreet/高德地图格式：{ latitude, longitude } 或 { lng, lat }
     if (restaurant.location.latitude && restaurant.location.longitude) {
       lat = parseFloat(restaurant.location.latitude)
       lng = parseFloat(restaurant.location.longitude)
@@ -37,8 +37,8 @@ export function getNavigationUrl(restaurant, mapService = 'amap') {
   }
 
   // 根据地图服务类型生成导航 URL
-  if (mapService === 'osm') {
-    // OpenStreetMap - 使用 Google Maps（支持全球导航）
+  if (mapService === 'greenstreet') {
+    // GreenStreet - 使用 Google Maps（支持全球导航）
     // 使用坐标导航（即使没有 API Key，也可以打开地图并显示位置）
     return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
   } else {

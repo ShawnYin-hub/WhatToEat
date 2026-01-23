@@ -2,11 +2,12 @@
  * 高德地图 Web 服务 API 调用
  */
 
-// 开发环境使用代理，生产环境直接调用（需要后端支持或使用其他方案）
-const AMAP_API_BASE_URL = import.meta.env.DEV
-  ? '/api/amap/v3/place/around'
-  : 'https://restapi.amap.com/v3/place/around'
-const AMAP_API_KEY = import.meta.env.VITE_AMAP_API_KEY
+// 使用 Vite proxy 避免跨域问题
+// 开发环境使用相对路径 /amap，生产环境可以配置反向代理或使用 CORS
+const AMAP_API_BASE_URL = import.meta.env.DEV 
+  ? '/amap/v3/place/around'  // 开发环境使用 proxy
+  : 'https://restapi.amap.com/v3/place/around'  // 生产环境直接调用（需要配置 CORS 或反向代理）
+const AMAP_API_KEY = import.meta.env.VITE_AMAP_KEY || ''
 
 /**
  * 获取附近的餐厅
@@ -22,7 +23,7 @@ export async function fetchRestaurants({ location, radius, keywords = [] }) {
   }
 
   if (!AMAP_API_KEY) {
-    throw new Error('API Key 未配置，请检查 .env.local 文件')
+    throw new Error('高德地图 API Key 未配置')
   }
 
   // 构建关键词，如果有多个则用 | 分隔
@@ -52,7 +53,11 @@ export async function fetchRestaurants({ location, radius, keywords = [] }) {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
+        // 移动端 WebView 友好：显式声明为 XHR
+        'X-Requested-With': 'XMLHttpRequest',
       },
+      mode: 'cors',
+      credentials: 'omit',
     })
     
     if (!response.ok) {
@@ -61,7 +66,31 @@ export async function fetchRestaurants({ location, radius, keywords = [] }) {
       throw new Error(`请求失败: ${response.status} ${response.statusText}`)
     }
 
-    const data = await response.json()
+    // 检查响应内容类型，确保是 JSON 而不是 HTML
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const responseText = await response.text()
+      // 检查是否是 HTML 响应
+      if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html') || responseText.trim().startsWith('<?xml')) {
+        throw new Error('服务器返回了 HTML 页面，请检查 API 配置')
+      }
+      throw new Error(`服务器返回了非 JSON 格式: ${contentType}`)
+    }
+
+    const responseText = await response.text()
+    // 再次检查响应文本，确保不是 HTML
+    if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html') || responseText.trim().startsWith('<?xml')) {
+      throw new Error('服务器返回了 HTML 页面，请检查 API 配置')
+    }
+
+    let data
+    try {
+      data = JSON.parse(responseText)
+    } catch (parseError) {
+      console.error('JSON 解析失败:', parseError, '响应内容:', responseText.substring(0, 200))
+      throw new Error('服务器返回了无效的 JSON 数据')
+    }
+    
     console.log('API 响应:', data)
 
     if (data.status !== '1') {

@@ -3,9 +3,9 @@
  * 适用于全球范围，包括海外地区
  */
 
-// 开发环境和生产环境都使用代理（Vercel Serverless Functions）
-const NOMINATIM_BASE_URL = '/api/nominatim'
-const OVERPASS_API_URL = '/api/overpass'
+// 直连官方免费端点（绝对 https URL；避免 Android WebView 相对 /api 路径问题）
+const NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org/search'
+const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter'
 
 /**
  * 搜索地点（使用 Nominatim 地理编码API）
@@ -32,7 +32,10 @@ export async function searchOSMLocation(query) {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
       },
+      mode: 'cors',
+      credentials: 'omit',
     })
 
     if (!response.ok) {
@@ -88,12 +91,17 @@ export async function fetchOSMRestaurants({ location, radius, keywords = [] }) {
 
     console.log('OSM Overpass 查询:', query.substring(0, 200) + '...')
 
+    // Overpass interpreter 接受 application/x-www-form-urlencoded (data=...)
     const response = await fetch(OVERPASS_API_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest',
       },
-      body: JSON.stringify({ query: query }),
+      mode: 'cors',
+      credentials: 'omit',
+      body: new URLSearchParams({ data: query }).toString(),
     })
 
     if (!response.ok) {

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { searchLocation } from '../services/locationService'
+import { useTranslation } from 'react-i18next'
 
 function LocationSelector({ onLocationChange, mapService = 'amap' }) {
+  const { t } = useTranslation()
   const [mode, setMode] = useState('auto') // 'auto' 或 'manual'
   const [isLoading, setIsLoading] = useState(false)
   const [locationInfo, setLocationInfo] = useState(null)
@@ -17,7 +19,7 @@ function LocationSelector({ onLocationChange, mapService = 'amap' }) {
   // 自动定位
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
-      setError('您的浏览器不支持地理位置功能')
+      setError(t('location.errors.notSupported'))
       setTimeout(() => setError(null), 3000)
       return
     }
@@ -31,25 +33,25 @@ function LocationSelector({ onLocationChange, mapService = 'amap' }) {
         const locationData = {
           latitude,
           longitude,
-          formatted_address: '当前位置',
+          formatted_address: t('location.currentLocation'),
           source: 'auto',
         }
         onLocationChange(locationData)
-        setLocationInfo('定位成功')
+        setLocationInfo(t('location.currentLocation'))
         setIsLoading(false)
       },
       (error) => {
         console.error('获取位置失败:', error)
-        let errorMessage = '无法获取您的位置'
+        let errorMessage = t('location.errors.failed')
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = '位置权限被拒绝，请在浏览器设置中允许位置访问'
+            errorMessage = t('location.errors.permissionDenied')
             break
           case error.POSITION_UNAVAILABLE:
-            errorMessage = '位置信息不可用'
+            errorMessage = t('location.errors.unavailable')
             break
           case error.TIMEOUT:
-            errorMessage = '获取位置超时'
+            errorMessage = t('location.errors.timeout')
             break
         }
         setError(errorMessage)
@@ -78,7 +80,7 @@ function LocationSelector({ onLocationChange, mapService = 'amap' }) {
       setIsSearching(false)
     } catch (err) {
       console.error('POI 搜索失败:', err)
-      setError(err.message || '搜索失败，请稍后重试')
+      setError(err.message || t('location.errors.searchFailed'))
       setSearchResults([])
       setShowResults(false)
       setIsSearching(false)
@@ -178,7 +180,7 @@ function LocationSelector({ onLocationChange, mapService = 'amap' }) {
                 d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-            <span>自动定位</span>
+            <span>{t('location.auto')}</span>
           </div>
         </button>
         <button
@@ -204,7 +206,7 @@ function LocationSelector({ onLocationChange, mapService = 'amap' }) {
                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
               />
             </svg>
-            <span>手动输入</span>
+            <span>{t('location.manual')}</span>
           </div>
         </button>
       </div>
@@ -233,7 +235,7 @@ function LocationSelector({ onLocationChange, mapService = 'amap' }) {
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   />
-                  <span className="text-base font-medium">正在获取位置...</span>
+                  <span className="text-base font-medium">{t('location.getting')}</span>
                 </>
               ) : (
                 <>
@@ -251,7 +253,7 @@ function LocationSelector({ onLocationChange, mapService = 'amap' }) {
                     <circle cx="12" cy="10" r="3"></circle>
                   </svg>
                   <span className="text-base font-medium">
-                    {locationInfo || '点击获取当前位置'}
+                    {locationInfo || t('location.clickToGet')}
                   </span>
                 </>
               )}
@@ -288,7 +290,7 @@ function LocationSelector({ onLocationChange, mapService = 'amap' }) {
                     // 延迟隐藏，让点击事件先触发
                     setTimeout(() => setShowResults(false), 200)
                   }}
-                  placeholder="例如：北京大学、中关村、三里屯..."
+                  placeholder={t('location.placeholder')}
                   className="w-full min-h-[44px] px-4 py-3 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-apple-text placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-apple-text focus:border-transparent touch-manipulation"
                 />
                 {isSearching && (
@@ -350,7 +352,7 @@ function LocationSelector({ onLocationChange, mapService = 'amap' }) {
                     d="M5 13l4 4L19 7"
                   />
                 </svg>
-                <span>已选择：{locationInfo}</span>
+                <span>{t('location.selected', { name: locationInfo })}</span>
               </motion.div>
             )}
           </motion.div>

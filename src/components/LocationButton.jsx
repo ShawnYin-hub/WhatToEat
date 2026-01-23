@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 function LocationButton({ onLocationChange }) {
   const [isLoading, setIsLoading] = useState(false)
   const [locationName, setLocationName] = useState(null)
+  const { t } = useTranslation()
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
-      alert('您的浏览器不支持地理位置功能')
+      alert(t('location.errors.notSupported'))
       return
     }
 
@@ -18,21 +20,21 @@ function LocationButton({ onLocationChange }) {
         const { latitude, longitude } = position.coords
         const locationData = { latitude, longitude }
         onLocationChange(locationData)
-        setLocationName('定位成功')
+        setLocationName(t('location.currentLocation'))
         setIsLoading(false)
       },
       (error) => {
         console.error('获取位置失败:', error)
-        let errorMessage = '无法获取您的位置'
+        let errorMessage = t('location.errors.failed')
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = '位置权限被拒绝，请在浏览器设置中允许位置访问'
+            errorMessage = t('location.errors.permissionDenied')
             break
           case error.POSITION_UNAVAILABLE:
-            errorMessage = '位置信息不可用'
+            errorMessage = t('location.errors.unavailable')
             break
           case error.TIMEOUT:
-            errorMessage = '获取位置超时'
+            errorMessage = t('location.errors.timeout')
             break
         }
         alert(errorMessage)
@@ -56,7 +58,7 @@ function LocationButton({ onLocationChange }) {
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           />
-          <span className="text-base font-medium">正在获取位置...</span>
+          <span className="text-base font-medium">{t('location.getting')}</span>
         </>
       ) : (
         <>
@@ -74,7 +76,7 @@ function LocationButton({ onLocationChange }) {
             <circle cx="12" cy="10" r="3"></circle>
           </svg>
           <span className="text-base font-medium">
-            {locationName || '点击获取定位'}
+            {locationName || t('location.clickToGet')}
           </span>
         </>
       )}

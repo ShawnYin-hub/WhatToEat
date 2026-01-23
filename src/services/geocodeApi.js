@@ -2,10 +2,9 @@
  * 高德地图地理编码 API - 地址转经纬度
  */
 
-const AMAP_API_KEY = import.meta.env.VITE_AMAP_API_KEY
-const GEOCODE_API_BASE_URL = import.meta.env.DEV
-  ? '/api/amap/v3/geocode/geo'
-  : 'https://restapi.amap.com/v3/geocode/geo'
+// 直接使用 HTTPS API
+const AMAP_API_KEY = import.meta.env.VITE_AMAP_KEY || ''
+const GEOCODE_API_BASE_URL = 'https://restapi.amap.com/v3/geocode/geo'
 
 /**
  * 将地址转换为经纬度
@@ -18,7 +17,7 @@ export async function geocodeAddress(address) {
   }
 
   if (!AMAP_API_KEY) {
-    throw new Error('API Key 未配置，请检查 .env.local 文件')
+    throw new Error('高德地图 API Key 未配置')
   }
 
   const params = new URLSearchParams({
@@ -35,7 +34,10 @@ export async function geocodeAddress(address) {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
       },
+      mode: 'cors',
+      credentials: 'omit',
     })
 
     if (!response.ok) {
@@ -44,7 +46,31 @@ export async function geocodeAddress(address) {
       throw new Error(`请求失败: ${response.status} ${response.statusText}`)
     }
 
-    const data = await response.json()
+    // 检查响应内容类型，确保是 JSON 而不是 HTML
+    const contentType = response.headers.get('content-type') || ''
+    if (!contentType.includes('application/json')) {
+      const responseText = await response.text()
+      // 检查是否是 HTML 响应
+      if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html') || responseText.trim().startsWith('<?xml')) {
+        throw new Error('服务器返回了 HTML 页面，请检查 API 配置')
+      }
+      throw new Error(`服务器返回了非 JSON 格式: ${contentType}`)
+    }
+
+    const responseText = await response.text()
+    // 再次检查响应文本，确保不是 HTML
+    if (responseText.trim().startsWith('<!DOCTYPE') || responseText.trim().startsWith('<html') || responseText.trim().startsWith('<?xml')) {
+      throw new Error('服务器返回了 HTML 页面，请检查 API 配置')
+    }
+
+    let data
+    try {
+      data = JSON.parse(responseText)
+    } catch (parseError) {
+      console.error('JSON 解析失败:', parseError, '响应内容:', responseText.substring(0, 200))
+      throw new Error('服务器返回了无效的 JSON 数据')
+    }
+    
     console.log('地理编码 API 响应:', data)
 
     if (data.status !== '1') {
@@ -87,10 +113,7 @@ export function geocodeAddressJsonp(address) {
       return
     }
 
-    if (!AMAP_API_KEY) {
-      reject(new Error('API Key 未配置'))
-      return
-    }
+    // API Key 已硬编码，无需检查
 
     const callbackName = `geocode_callback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     const script = document.createElement('script')

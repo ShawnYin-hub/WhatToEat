@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 /**
  * 老虎机滚动动画组件
  */
 function SlotMachine({ restaurants, duration = 1500, onComplete }) {
+  const { t } = useTranslation()
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isSpinning, setIsSpinning] = useState(true)
 
@@ -54,7 +56,7 @@ function SlotMachine({ restaurants, duration = 1500, onComplete }) {
   if (!restaurants || restaurants.length === 0) {
     return (
       <div className="text-center py-8">
-        <div className="text-lg text-apple-text">正在搜索...</div>
+        <div className="text-lg text-apple-text">{t('actions.searching')}</div>
       </div>
     )
   }

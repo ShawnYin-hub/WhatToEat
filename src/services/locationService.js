@@ -7,7 +7,7 @@ import { searchPOI, searchPOIJsonp } from './poiSearchApi'
 import { fetchRestaurants } from './amapApi'
 import { fetchRestaurantsJsonp } from './amapApiJsonp'
 import { searchGooglePlaces, fetchGoogleRestaurants } from './googleMapsApi'
-import { searchOSMLocation, fetchOSMRestaurants } from './osmApi'
+import { searchGreenStreetLocation, fetchGreenStreetRestaurants } from './greenstreetApi'
 
 /**
  * 搜索地点（统一接口）
@@ -15,9 +15,9 @@ import { searchOSMLocation, fetchOSMRestaurants } from './osmApi'
 export async function searchLocation(keyword, serviceType = 'amap') {
   if (serviceType === 'google') {
     return await searchGooglePlaces(keyword)
-  } else if (serviceType === 'osm') {
-    // OpenStreetMap - 完全免费
-    return await searchOSMLocation(keyword)
+  } else if (serviceType === 'greenstreet') {
+    // GreenStreet - 使用高德地图 API
+    return await searchGreenStreetLocation(keyword)
   } else {
     // 高德地图
     try {
@@ -35,9 +35,9 @@ export async function searchLocation(keyword, serviceType = 'amap') {
 export async function searchRestaurants({ location, radius, keywords = [] }, serviceType = 'amap') {
   if (serviceType === 'google') {
     return await fetchGoogleRestaurants({ location, radius, keywords })
-  } else if (serviceType === 'osm') {
-    // OpenStreetMap - 完全免费
-    return await fetchOSMRestaurants({ location, radius, keywords })
+  } else if (serviceType === 'greenstreet') {
+    // GreenStreet - 使用高德地图 API
+    return await fetchGreenStreetRestaurants({ location, radius, keywords })
   } else {
     // 高德地图
     try {

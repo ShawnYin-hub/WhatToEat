@@ -17,6 +17,284 @@ body {
   /* 移动端优化 */
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  /* Safe-area（刘海/挖孔/状态栏/底部手势条）适配：
+     - iOS Safari / iOS WebView 支持 env(safe-area-inset-*)
+     - Android 大多数机型会是 0，但配合原生窗口 Insets 也能避免遮挡 */
+  padding-top: var(--safe-area-top);
+  padding-right: var(--safe-area-right);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: var(--safe-area-left);
+  /* Prefer modern dynamic viewport units to avoid status bar / cutout overlap jitter */
+  min-height: 100dvh;
+}
+
+/* Apple-like design tokens */
+:root {
+  --apple-bg-0: #fbfbfd;
+  --apple-bg-1: #f5f5f7;
+  --apple-ink: #1d1d1f;
+  --apple-ink-2: rgba(29, 29, 31, 0.78);
+  --apple-ink-3: rgba(29, 29, 31, 0.58);
+  --apple-line: rgba(29, 29, 31, 0.08);
+  --apple-line-strong: rgba(29, 29, 31, 0.12);
+  --apple-surface: rgba(255, 255, 255, 0.78);
+  --apple-surface-strong: rgba(255, 255, 255, 0.9);
+  --apple-shadow: 0 24px 80px -44px rgba(0, 0, 0, 0.55);
+  --apple-shadow-soft: 0 18px 60px -40px rgba(31, 41, 55, 0.4);
+  --apple-radius: 28px;
+  --apple-radius-2: 20px;
+
+  /* Safe-area variables with sensible fallbacks */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+}
+
+.safe-area-container {
+  padding-top: var(--safe-area-top);
+  padding-right: var(--safe-area-right);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: var(--safe-area-left);
+  /* Use dynamic viewport height when available (Android/Chrome, iOS Safari/WebView),
+     fallback keeps older WebViews working. */
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Safe top padding helper for sticky bars */
+.safe-top {
+  padding-top: calc(var(--safe-area-top) + 12px);
+}
+
+/* Frosted sticky header */
+.frosted-bar {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 12px 40px -24px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 18px 18px 22px 22px;
+}
+
+.title-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--apple-ink-2);
+  border-bottom: 1px solid var(--apple-line);
+  position: relative;
+}
+
+.title-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: auto;
+  height: auto;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid var(--apple-line);
+  color: var(--apple-ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.68rem;
+}
+
+.subdued {
+  color: rgba(17, 24, 39, 0.65);
+}
+
+@layer components {
+  .apple-page {
+    background:
+      radial-gradient(1200px 520px at 20% 0%, rgba(194, 211, 255, 0.32) 0%, transparent 60%),
+      radial-gradient(900px 520px at 85% 10%, rgba(184, 225, 255, 0.26) 0%, transparent 55%),
+      radial-gradient(800px 520px at 35% 95%, rgba(217, 217, 255, 0.22) 0%, transparent 60%),
+      linear-gradient(180deg, var(--apple-bg-0), var(--apple-bg-1));
+  }
+
+  .apple-nav {
+    background: rgba(255, 255, 255, 0.72);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .apple-card {
+    background: var(--apple-surface);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow: var(--apple-shadow-soft);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: var(--apple-radius);
+  }
+
+  .apple-subcard {
+    background: linear-gradient(180deg, rgba(255,255,255,0.86), rgba(245,245,247,0.9));
+    border: 1px solid rgba(255, 255, 255, 0.62);
+    border-radius: var(--apple-radius-2);
+  }
+
+  .apple-divider {
+    border-color: var(--apple-line);
+  }
+
+  .apple-title {
+    color: var(--apple-ink);
+    letter-spacing: -0.01em;
+  }
+
+  .apple-muted {
+    color: var(--apple-ink-3);
+  }
+
+  .apple-btn-primary {
+    background: var(--apple-ink);
+    color: white;
+    border-radius: 18px;
+    box-shadow: 0 14px 40px -22px rgba(0,0,0,0.6);
+  }
+
+  .apple-btn-soft {
+    background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(245,245,247,0.92));
+    border: 1px solid rgba(29, 29, 31, 0.08);
+    color: var(--apple-ink);
+    border-radius: 18px;
+  }
+
+  .apple-accent {
+    background: linear-gradient(90deg, rgba(194,211,255,0.85), rgba(184,225,255,0.75), rgba(217,217,255,0.7));
+    border: 1px solid rgba(255,255,255,0.65);
+    color: var(--apple-ink);
+    border-radius: 20px;
+  }
+
+  /* Apple Music–inspired components */
+  .music-page {
+    background:
+      radial-gradient(1200px 720px at 15% 10%, rgba(255, 77, 109, 0.16), transparent 60%),
+      radial-gradient(1200px 820px at 85% 0%, rgba(168, 85, 247, 0.16), transparent 55%),
+      radial-gradient(1000px 520px at 30% 90%, rgba(56, 189, 248, 0.12), transparent 60%),
+      #0b0b0f;
+    color: #f9fafb;
+  }
+
+  .music-hero {
+    background: linear-gradient(135deg, #ff4d6d 0%, #c084fc 45%, #312e81 100%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow:
+      0 25px 80px -32px rgba(0, 0, 0, 0.8),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    border-radius: 28px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .music-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 22px 70px -36px rgba(0, 0, 0, 0.75);
+    border-radius: 24px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .music-chip {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 9999px;
+    color: #f9fafb;
+  }
+
+  .music-divider {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .music-nav {
+    background: linear-gradient(90deg, rgba(11, 11, 15, 0.92), rgba(12, 12, 18, 0.72));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .music-icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f9fafb;
+    box-shadow: 0 10px 30px -16px rgba(0, 0, 0, 0.5);
+  }
+
+  .music-pill {
+    background: linear-gradient(120deg, #ff4d6d 0%, #c084fc 40%, #60a5fa 100%);
+    color: #fdf2f8;
+    border-radius: 9999px;
+    box-shadow: 0 18px 38px -22px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  }
+
+  .music-pill-ghost {
+    background: rgba(255, 255, 255, 0.08);
+    color: #f9fafb;
+    border-radius: 9999px;
+    box-shadow: 0 16px 40px -26px rgba(0, 0, 0, 0.7);
+  }
+
+  .music-stat {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 18px 50px -26px rgba(0, 0, 0, 0.7);
+  }
+}
+
+/* Apple-like font preference by language */
+html[data-lang="en"] body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+html[data-lang="zh"] body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
+}
+
+/* Smooth fade on language switch */
+/* Toast 动画 */
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  10%, 90% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+}
+
+.i18n-fade {
+  will-change: opacity, filter;
 }
 
 /* 触摸优化 */

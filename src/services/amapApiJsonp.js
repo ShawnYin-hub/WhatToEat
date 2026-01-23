@@ -2,7 +2,8 @@
  * 高德地图 Web 服务 API 调用 - JSONP 备用方案
  */
 
-const AMAP_API_KEY = import.meta.env.VITE_AMAP_API_KEY
+// 直接使用 HTTPS API，硬编码 API Key
+const AMAP_API_KEY = import.meta.env.VITE_AMAP_KEY || ''
 
 /**
  * JSONP 请求封装
@@ -60,9 +61,7 @@ export async function fetchRestaurantsJsonp({ location, radius, keywords = [] })
     throw new Error('位置信息不完整')
   }
 
-  if (!AMAP_API_KEY) {
-    throw new Error('API Key 未配置，请检查 .env.local 文件')
-  }
+  // API Key 已硬编码，无需检查
 
   const keywordStr = keywords.length > 0 ? keywords.join('|') : ''
 

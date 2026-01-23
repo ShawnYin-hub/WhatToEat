@@ -1,9 +1,19 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getNavigationUrl, copyAddressToClipboard } from '../utils/navigation'
+import { useTranslation } from 'react-i18next'
 
-function ResultModal({ isOpen, restaurant, onClose, onChangeRestaurant, mapService = 'amap' }) {
+function ResultModal({
+  isOpen,
+  restaurant,
+  onClose,
+  onChangeRestaurant,
+  onConfirmSelection,
+  mapService = 'amap',
+  aiReason = '',
+}) {
   const [copied, setCopied] = useState(false)
+  const { t } = useTranslation()
   
   if (!isOpen || !restaurant) return null
 
@@ -16,7 +26,7 @@ function ResultModal({ isOpen, restaurant, onClose, onChangeRestaurant, mapServi
 
     return (
       <div className="flex items-center gap-1">
-        <span className="text-gray-500 text-sm">评分：</span>
+        <span className="text-gray-500 text-sm">{t('result.rating')}</span>
         <div className="flex items-center gap-0.5">
           {[1, 2, 3, 4, 5].map((star) => (
             <svg
@@ -115,7 +125,7 @@ function ResultModal({ isOpen, restaurant, onClose, onChangeRestaurant, mapServi
                     transition={{ delay: 0.3 }}
                     className="text-xl sm:text-2xl font-semibold text-apple-text mb-2"
                   >
-                    今天去吃
+                    {t('result.goEat')}
                   </motion.h2>
                   <motion.h3
                     initial={{ opacity: 0, y: 10 }}
@@ -125,6 +135,22 @@ function ResultModal({ isOpen, restaurant, onClose, onChangeRestaurant, mapServi
                   >
                     {restaurant.name}
                   </motion.h3>
+
+                  {/* AI 建议理由（如有） */}
+                  {aiReason && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.45 }}
+                      className="mb-4 sm:mb-5 text-sm text-gray-600 px-3"
+                    >
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50/80 px-3 py-1 text-xs text-blue-700 border border-blue-100">
+                        <span>AI</span>
+                        <span className="w-1 h-1 rounded-full bg-blue-400" />
+                        <span>{aiReason}</span>
+                      </span>
+                    </motion.div>
+                  )}
 
                   {/* 餐厅信息卡片 */}
                   <motion.div
@@ -158,7 +184,7 @@ function ResultModal({ isOpen, restaurant, onClose, onChangeRestaurant, mapServi
                             d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                           />
                         </svg>
-                        <span className="text-gray-500 text-sm">距离：</span>
+                        <span className="text-gray-500 text-sm">{t('result.distance')}</span>
                         <span className="text-apple-text font-medium">
                           {restaurant.distance > 1000
                             ? `${(restaurant.distance / 1000).toFixed(1)}km`
@@ -190,7 +216,7 @@ function ResultModal({ isOpen, restaurant, onClose, onChangeRestaurant, mapServi
                           />
                         </svg>
                         <div className="flex-1">
-                          <span className="text-gray-500 text-sm">地址：</span>
+                          <span className="text-gray-500 text-sm">{t('result.address')}</span>
                           <span className="text-apple-text text-sm leading-relaxed">
                             {restaurant.address}
                           </span>
@@ -204,35 +230,59 @@ function ResultModal({ isOpen, restaurant, onClose, onChangeRestaurant, mapServi
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 }}
-                    className="flex gap-3"
+                    className="space-y-3"
                   >
-                    <motion.button
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={onChangeRestaurant}
-                      className="flex-1 min-h-[44px] py-3 px-4 sm:px-6 bg-white/80 backdrop-blur-sm text-apple-text rounded-xl font-medium hover:bg-white active:bg-white/90 transition-colors border border-white/40 shadow-sm touch-manipulation"
-                    >
-                      换一家
-                    </motion.button>
-                    {navigationUrl ? (
-                      <motion.a
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        href={navigationUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 min-h-[44px] py-3 px-4 sm:px-6 bg-apple-text text-white rounded-xl font-medium hover:bg-opacity-90 active:bg-opacity-80 transition-colors shadow-lg touch-manipulation flex items-center justify-center"
-                      >
-                        带我导航
-                      </motion.a>
-                    ) : (
+                    <div className="flex gap-3">
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={handleCopyAddress}
-                        className="flex-1 min-h-[44px] py-3 px-4 sm:px-6 bg-apple-text text-white rounded-xl font-medium hover:bg-opacity-90 active:bg-opacity-80 transition-colors shadow-lg touch-manipulation flex items-center justify-center"
+                        onClick={onChangeRestaurant}
+                        className="flex-1 min-h-[44px] py-3 px-4 sm:px-6 bg-white/80 backdrop-blur-sm text-apple-text rounded-xl font-medium hover:bg-white active:bg-white/90 transition-colors border border-white/40 shadow-sm touch-manipulation"
                       >
-                        {copied ? '✓ 已复制' : '复制地址'}
+                        {t('actions.changeOne')}
+                      </motion.button>
+                      {navigationUrl ? (
+                        <motion.a
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          href={navigationUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => {
+                            // 点击导航也算确认选择
+                            if (onConfirmSelection) {
+                              onConfirmSelection(restaurant)
+                            }
+                          }}
+                          className="flex-1 min-h-[44px] py-3 px-4 sm:px-6 bg-apple-text text-white rounded-xl font-medium hover:bg-opacity-90 active:bg-opacity-80 transition-colors shadow-lg touch-manipulation flex items-center justify-center"
+                        >
+                          {t('actions.navigate')}
+                        </motion.a>
+                      ) : (
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={handleCopyAddress}
+                          className="flex-1 min-h-[44px] py-3 px-4 sm:px-6 bg-apple-text text-white rounded-xl font-medium hover:bg-opacity-90 active:bg-opacity-80 transition-colors shadow-lg touch-manipulation flex items-center justify-center"
+                        >
+                          {copied ? t('actions.copied') : t('actions.copyAddress')}
+                        </motion.button>
+                      )}
+                    </div>
+                    {onConfirmSelection && (
+                      <motion.button
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.7 }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => {
+                          onConfirmSelection(restaurant)
+                          onClose()
+                        }}
+                        className="w-full min-h-[44px] py-3 px-4 sm:px-6 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-medium hover:opacity-90 active:opacity-80 transition-opacity shadow-lg touch-manipulation"
+                      >
+                        {t('actions.confirmThis')}
                       </motion.button>
                     )}
                   </motion.div>

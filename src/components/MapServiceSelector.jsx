@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { useTranslation } from 'react-i18next'
 
 const MAP_SERVICES = {
   amap: {
@@ -8,16 +9,17 @@ const MAP_SERVICES = {
     description: '适用于中国内地',
     icon: '🇨🇳',
   },
-  osm: {
-    id: 'osm',
-    name: 'OpenStreetMap',
+  greenstreet: {
+    id: 'greenstreet',
+    name: 'GreenStreet',
     description: '全球免费（推荐海外）',
-    icon: '🌍',
+    icon: '🌿',
     free: true,
   },
 }
 
 function MapServiceSelector({ value, onChange }) {
+  const { t } = useTranslation()
   const [selectedService, setSelectedService] = useState(value || 'amap')
 
   const handleChange = (serviceId) => {
@@ -36,7 +38,7 @@ function MapServiceSelector({ value, onChange }) {
             onClick={() => handleChange(service.id)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className={`min-h-[44px] px-3 sm:px-4 py-3 rounded-xl border-2 transition-all touch-manipulation ${
+            className={`min-h-[44px] px-3 sm:px-4 py-3 rounded-xl border-2 transition-all touch-manipulation active:scale-95 ${
               selectedService === service.id
                 ? 'border-apple-text bg-apple-text text-white shadow-md'
                 : 'border-gray-200 bg-white text-apple-text hover:border-gray-300'
@@ -44,28 +46,28 @@ function MapServiceSelector({ value, onChange }) {
           >
             <div className="flex flex-col items-center gap-1">
               <span className="text-2xl">{service.icon}</span>
-              <span className="font-medium text-sm">{service.name}</span>
+              <span className="font-medium text-sm">{t(`map.${service.id}.name`)}</span>
               <span className={`text-xs ${
                 selectedService === service.id ? 'text-white/80' : 'text-gray-500'
               }`}>
-                {service.description}
+                {t(`map.${service.id}.desc`)}
               </span>
               {service.free && (
                 <span className={`text-xs font-bold ${
                   selectedService === service.id ? 'text-white' : 'text-green-600'
                 }`}>
-                  ✓ 免费
+                  {t('map.free')}
                 </span>
               )}
             </div>
           </motion.button>
         ))}
       </div>
-      {selectedService === 'osm' && (
+      {selectedService === 'greenstreet' && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-800"
+          className="bg-green-50 border border-green-200 rounded-xl p-3 text-sm text-green-800"
         >
           <div className="flex items-start gap-2">
             <svg
@@ -82,10 +84,10 @@ function MapServiceSelector({ value, onChange }) {
               />
             </svg>
             <div>
-              <div className="font-medium mb-1">✓ 完全免费，无需配置</div>
-              <div className="text-xs text-blue-700">
-                OpenStreetMap 是开源地图服务，全球可用，无需 API Key，无需绑卡。
-                <span className="block mt-1 font-medium">⚠️ 注意：在中国内地可能需要 VPN 才能正常使用。</span>
+              <div className="font-medium mb-1">{t('map.tipTitle')}</div>
+              <div className="text-xs text-green-700">
+                {t('map.tipBody')}
+                <span className="block mt-1 font-medium">{t('map.tipBody2')}</span>
               </div>
             </div>
           </div>

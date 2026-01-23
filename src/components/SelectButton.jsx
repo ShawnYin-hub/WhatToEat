@@ -2,22 +2,30 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getRandomRestaurant } from '../services/amapApi'
 import { searchRestaurants } from '../services/locationService'
+import { databaseService } from '../services/databaseService'
+import { useAuth } from '../contexts/AuthContext'
+import { getWeightedRecommendation } from '../services/recommendationEngine'
 import ResultModal from './ResultModal'
 import SlotMachine from './SlotMachine'
 import EmptyState from './EmptyState'
+import { useTranslation } from 'react-i18next'
 
 function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
+  const { user } = useAuth()
+  const { t } = useTranslation()
   const [isLoading, setIsLoading] = useState(false)
   const [isSpinning, setIsSpinning] = useState(false)
   const [allRestaurants, setAllRestaurants] = useState([])
   const [selectedRestaurant, setSelectedRestaurant] = useState(null)
+  const [preferredRestaurantId, setPreferredRestaurantId] = useState(null)
+  const [decisionReason, setDecisionReason] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [showEmptyState, setShowEmptyState] = useState(false)
   const [error, setError] = useState(null)
   const [slotKey, setSlotKey] = useState(0) // 用于强制重新渲染 SlotMachine
 
   const formatRestaurant = (restaurant) => {
-    // 处理 location：高德地图返回字符串 "lng,lat"，OSM 返回对象 { latitude, longitude }
+    // 处理 location：高德地图返回字符串 "lng,lat"，GreenStreet 返回对象 { latitude, longitude }
     let location = null
     if (restaurant.location) {
       if (typeof restaurant.location === 'string') {
@@ -27,7 +35,7 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
           location = { lng, lat }
         }
       } else if (typeof restaurant.location === 'object') {
-        // OSM 格式：{ latitude, longitude } 或 { lng, lat }
+        // GreenStreet/高德地图格式：{ latitude, longitude } 或 { lng, lat }
         if (restaurant.location.latitude && restaurant.location.longitude) {
           location = {
             latitude: restaurant.location.latitude,
@@ -40,7 +48,7 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
     }
 
     return {
-      name: restaurant.name || '未知餐厅',
+      name: restaurant.name || t('select.unknownRestaurant'),
       type: restaurant.type || '',
       address: restaurant.address || '',
       distance: parseInt(restaurant.distance || '0', 10),
@@ -53,7 +61,7 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
   const handleSelect = async () => {
     // 验证必要条件
     if (!location) {
-      setError('请先设置搜索位置（自动定位或手动输入地址）')
+      setError(t('select.needLocation'))
       setTimeout(() => setError(null), 3000)
       return
     }
@@ -63,6 +71,8 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
     setSelectedRestaurant(null)
     setIsSpinning(false) // 先不显示老虎机
     setShowEmptyState(false) // 隐藏空状态
+    setPreferredRestaurantId(null)
+    setDecisionReason('')
 
     try {
       // 调用地图服务 API
@@ -89,7 +99,48 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
 
       // 保存所有餐厅用于换一家功能
       setAllRestaurants(pois)
-      
+
+      // 如果用户已登录，记录搜索历史
+      if (user) {
+        try {
+          await databaseService.saveSearchHistory(user.id, {
+            address: location.address || `${location.lat},${location.lng}`,
+            categories: selectedFoods,
+            distance: range,
+            mapService,
+          })
+        } catch (err) {
+          console.error('保存搜索历史失败:', err)
+          // 不阻止用户使用，静默失败
+        }
+      }
+
+      // 在开始老虎机动画前，尝试调用 AI 权重推荐
+      try {
+        const weatherLocation =
+          location && (location.latitude && location.longitude)
+            ? { latitude: location.latitude, longitude: location.longitude }
+            : location && (location.lat && location.lng)
+              ? { latitude: location.lat, longitude: location.lng }
+              : null
+
+        const { bestRestaurantId, decision_reason } = await getWeightedRecommendation({
+          userId: user?.id || null,
+          location: weatherLocation,
+          mood: null, // 预留心情参数，后续可从 UI 传入
+          candidates: pois,
+        })
+
+        if (bestRestaurantId) {
+          setPreferredRestaurantId(bestRestaurantId)
+        }
+        if (decision_reason) {
+          setDecisionReason(decision_reason)
+        }
+      } catch (aiErr) {
+        console.warn('AI 加权推荐失败，回退为普通随机:', aiErr)
+      }
+
       // API 调用完成后，开始老虎机动画
       setIsLoading(false)
       setIsSpinning(true)
@@ -98,21 +149,53 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
       // SlotMachine 组件会在动画完成后调用 handleSlotComplete
     } catch (err) {
       console.error('选择餐厅失败:', err)
-      setError(err.message || '获取餐厅信息失败，请稍后重试')
+      setError(err.message || t('select.fetchFailed'))
       setIsLoading(false)
     }
   }
 
-  const handleSlotComplete = () => {
-    // 老虎机动画完成，随机选择一个餐厅
+  const handleSlotComplete = async () => {
+    // 老虎机动画完成，优先选择 AI 推荐的餐厅，若没有则随机
     if (allRestaurants.length > 0) {
-      const randomRestaurant = getRandomRestaurant(allRestaurants)
-      if (randomRestaurant) {
-        const formattedRestaurant = formatRestaurant(randomRestaurant)
+      let target = null
+
+      if (preferredRestaurantId) {
+        target =
+          allRestaurants.find(
+            (poi) =>
+              poi.id === preferredRestaurantId ||
+              poi.uid === preferredRestaurantId ||
+              poi.poiId === preferredRestaurantId ||
+              poi.name === preferredRestaurantId
+          ) || null
+      }
+
+      if (!target) {
+        target = getRandomRestaurant(allRestaurants)
+      }
+
+      if (target) {
+        const formattedRestaurant = formatRestaurant(target)
         setSelectedRestaurant(formattedRestaurant)
         setIsSpinning(false)
         setIsLoading(false)
         setShowModal(true)
+        
+        // 保存浏览记录（用户看到了但还未确认）
+        if (user) {
+          try {
+            await databaseService.saveViewHistory(user.id, {
+              restaurant_name: formattedRestaurant.name,
+              category: formattedRestaurant.type || selectedFoods[0] || t('select.unknown'),
+              address: formattedRestaurant.address || '',
+              rating: formattedRestaurant.rating || null,
+              distance: formattedRestaurant.distance || 0,
+            })
+            console.log('✅ 浏览记录已保存')
+          } catch (err) {
+            console.error('❌ 保存浏览记录失败:', err)
+          }
+        }
       }
     }
   }
@@ -150,12 +233,12 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
             className="bg-white rounded-apple p-4 sm:p-6 shadow-sm"
           >
             <div className="text-center mb-3 sm:mb-4">
-              <div className="text-base sm:text-lg font-medium text-apple-text">正在为你挑选...</div>
+              <div className="text-base sm:text-lg font-medium text-apple-text">{t('actions.pickingForYou')}</div>
             </div>
             <SlotMachine
               key={slotKey}
               restaurants={allRestaurants.map((poi) => ({
-                name: poi.name || '未知餐厅',
+                name: poi.name || t('select.unknownRestaurant'),
                 type: poi.type || '',
               }))}
               duration={1500}
@@ -198,12 +281,12 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
               />
-              正在搜索...
+              {t('actions.searching')}
             </span>
           ) : isSpinning ? (
-            <span className="relative z-10">正在挑选中...</span>
+            <span className="relative z-10">{t('actions.picking')}</span>
           ) : (
-            <span className="relative z-10">帮我选</span>
+            <span className="relative z-10">{t('actions.helpMeChoose')}</span>
           )}
         </motion.button>
 
@@ -226,11 +309,47 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
       <ResultModal
         isOpen={showModal}
         restaurant={selectedRestaurant}
+        aiReason={decisionReason}
         onClose={() => {
           setShowModal(false)
           setSelectedRestaurant(null)
         }}
         onChangeRestaurant={handleChangeRestaurant}
+        onConfirmSelection={async (restaurant) => {
+          // 记录用户最终选择
+          if (user && restaurant) {
+            try {
+              console.log('🔄 开始保存选择结果:', {
+                userId: user.id,
+                restaurantName: restaurant.name,
+                category: restaurant.type || selectedFoods[0] || t('select.unknown'),
+                address: restaurant.address || '',
+              })
+              
+              const { data, error } = await databaseService.saveSelectionResult(user.id, {
+                restaurant_name: restaurant.name,
+                category: restaurant.type || selectedFoods[0] || t('select.unknown'),
+                address: restaurant.address || '',
+              })
+              
+              if (error) {
+                console.error('❌ 保存选择结果失败:', error)
+                alert(`保存失败: ${error.message || error}`)
+              } else {
+                console.log('✅ 选择结果已保存成功:', data)
+                // 保存成功后，可以触发一个自定义事件，让 ProfilePage 知道需要刷新
+                window.dispatchEvent(new CustomEvent('selectionSaved', { 
+                  detail: { restaurantName: restaurant.name } 
+                }))
+              }
+            } catch (err) {
+              console.error('❌ 保存选择结果异常:', err)
+              alert(`保存异常: ${err.message || err}`)
+            }
+          } else {
+            console.warn('⚠️ 无法保存：用户或餐厅信息缺失', { user: !!user, restaurant: !!restaurant })
+          }
+        }}
         mapService={mapService}
       />
     </>
