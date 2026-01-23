@@ -1,14 +1,12 @@
 {
-  "name": "Swift via Features",
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-  "features": {
-      "ghcr.io/devcontainers/features/swift:1": {}
-  },
+  "name": "Swift Official",
+  "image": "swift:5.9-bookworm",
   "customizations": {
       "vscode": {
           "extensions": [
               "sswg.swift-lang"
           ]
       }
-  }
+  },
+  "remoteUser": "root"
 }
