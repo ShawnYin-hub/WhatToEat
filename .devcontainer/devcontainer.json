@@ -1,8 +1,8 @@
 {
-  "name": "Swift",
-  "image": "mcr.microsoft.com/devcontainers/swift:1",
+  "name": "Swift via Features",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "features": {
-      "ghcr.io/devcontainers/features/common-utils:2": {}
+      "ghcr.io/devcontainers/features/swift:1": {}
   },
   "customizations": {
       "vscode": {
