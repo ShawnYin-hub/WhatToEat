@@ -1,0 +1,15 @@
+{
+  "name": "Swift Development Container",
+  "image": "mcr.microsoft.com/devcontainers/swift:1-5.9",
+  "features": {},
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "sswg.swift-lang"
+      ]
+    }
+  },
+  "forwardPorts": [],
+  "postCreateCommand": "swift --version",
+  "remoteUser": "vscode"
+}
