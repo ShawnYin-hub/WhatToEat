@@ -106,8 +106,27 @@ jobs:
               CODE_SIGNING_REQUIRED=NO \
               CODE_SIGNING_ALLOWED=NO
               
+            # 严格指定构建产物路径，避免使用中间文件
+            APP_PATH="build/DerivedData/Build/Products/Release-iphoneos/App.app"
+            
+            if [ ! -d "$APP_PATH" ]; then
+              echo "❌ Error: App.app not found at $APP_PATH"
+              echo "Searching for App.app..."
+              find build/DerivedData -name "*.app"
+              exit 1
+            fi
+            
+            echo "✅ Found App.app at $APP_PATH"
+            
+            # 验证资源文件是否存在
+            if [ ! -d "$APP_PATH/public" ]; then
+               echo "⚠️ Warning: public folder missing in App.app! Web assets might be missing."
+               ls -R "$APP_PATH"
+            else
+               echo "✅ Public folder found in App.app"
+            fi
+            
             # 手动打包 IPA
-            APP_PATH=$(find build/DerivedData -name "*.app" | head -n 1)
             mkdir -p build/Payload
             cp -r "$APP_PATH" build/Payload/
             cd build
