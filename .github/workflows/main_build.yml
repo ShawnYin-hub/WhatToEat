@@ -40,14 +40,17 @@ jobs:
       - name: Install Capacitor CLI globally
         run: npm install -g @capacitor/cli
 
-      - name: Add iOS platform (if not exists)
+      - name: Setup iOS platform
         run: |
-          if [ ! -d "ios/App" ]; then
-            echo "Adding iOS platform..."
-            npx cap add ios
+          if [ -d "ios" ]; then
+            echo "iOS folder already exists, skipping 'cap add ios'"
           else
-            echo "iOS platform already exists"
+            echo "iOS folder not found, adding iOS platform..."
+            npx cap add ios
           fi
+
+      - name: Sync Capacitor
+        run: npx cap sync ios
 
       - name: Install CocoaPods dependencies
         run: |
@@ -55,12 +58,10 @@ jobs:
             cd ios/App
             pod install
             cd ../..
+            echo "CocoaPods dependencies installed successfully"
           else
             echo "Podfile not found, skipping pod install"
           fi
-
-      - name: Sync Capacitor
-        run: npx cap sync ios
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
