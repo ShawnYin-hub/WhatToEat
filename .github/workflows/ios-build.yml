@@ -62,7 +62,7 @@ jobs:
             cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
             
             # --- 构建 Archive ---
-            xcodebuild -workspace App.xcworkspace \
+            xcodebuild -project App.xcodeproj \
               -scheme "App" \
               -sdk iphoneos \
               -configuration Release \
@@ -97,7 +97,7 @@ jobs:
             # --- 无签名构建逻辑 (适配 AltServer) ---
             # 这里的关键是禁用签名要求，生成 .app 文件，然后手动打包成 .ipa
             
-            xcodebuild -workspace App.xcworkspace \
+            xcodebuild -project App.xcodeproj \
               -scheme "App" \
               -sdk iphoneos \
               -configuration Release \
