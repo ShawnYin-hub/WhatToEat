@@ -1,0 +1,313 @@
+{
+  "app": {
+    "name": "What to Eat",
+    "tagline": "Decision fatigue, solved."
+  },
+  "home": {
+    "loginUnlock": "Log in to unlock",
+    "mapService": "Map Service",
+    "searchLocation": "Location",
+    "whatToEat": "Cuisine",
+    "searchRange": "Distance",
+    "daily": "Warm Bites",
+    "multiplayer": "Group Pick",
+    "profile": "Me"
+  },
+  "actions": {
+    "helpMeChoose": "Help Me Choose",
+    "searching": "Searching...",
+    "picking": "Picking...",
+    "pickingForYou": "Choosing for you...",
+    "changeOne": "Try another",
+    "navigate": "Navigate",
+    "copyAddress": "Copy address",
+    "copied": "✓ Copied",
+    "confirmThis": "This one",
+    "close": "Close"
+  },
+  "location": {
+    "auto": "Auto",
+    "manual": "Manual",
+    "getting": "Getting location...",
+    "clickToGet": "Tap to use current location",
+    "currentLocation": "Current location",
+    "selected": "Selected: {{name}}",
+    "placeholder": "e.g. Peking University, Zhongguancun, Sanlitun...",
+    "errors": {
+      "notSupported": "Geolocation is not supported by your browser",
+      "failed": "Unable to get your location",
+      "permissionDenied": "Location permission denied. Please allow location access in your browser settings.",
+      "unavailable": "Location information is unavailable",
+      "timeout": "Location request timed out",
+      "searchFailed": "Search failed. Please try again later."
+    }
+  },
+  "map": {
+    "amap": { "name": "Amap", "desc": "Best for Mainland China" },
+    "greenstreet": { "name": "GreenStreet", "desc": "Free worldwide (recommended abroad)" },
+    "free": "✓ Free",
+    "tipTitle": "✓ Totally free, no setup required",
+    "tipBody": "GreenStreet uses OpenStreetMap data and works globally — no API key, no credit card.",
+    "tipBody2": "✓ Worldwide search supported, including overseas regions."
+  },
+  "auth": {
+    "login": "Log in",
+    "signup": "Sign up",
+    "email": "Email",
+    "password": "Password",
+    "processing": "Processing...",
+    "signupSuccess": "Sign-up successful! Please log in.",
+    "failed": "Something went wrong. Please try again.",
+    "guestOr": "Or continue as guest",
+    "guestNote": "Guest mode only supports basic random selection.",
+    "continueGuest": "Continue as guest"
+  },
+  "profile": {
+    "title": "Profile",
+    "edit": "Edit",
+    "logout": "Sign out",
+    "explorer": "Food Explorer",
+    "weeklyStats": "This week",
+    "weeklySearches": "Searches",
+    "mostCuisine": "Top cuisine",
+    "aiPersona": "AI Food Persona",
+    "yourTitle": "Your title",
+    "viewReport": "View report",
+    "generating": "Generating...",
+    "generate": "Generate my AI persona",
+    "regenerate": "Regenerate my AI persona",
+    "export": "Export my food report",
+    "history": "History",
+    "noHistory": "No history yet",
+    "generateFailed": "Failed to generate persona: {{error}}",
+    "exportFile": "Food_Report_{{date}}.html",
+    "decisionStyle": "Decision Style",
+    "judging": "Judging",
+    "defaultDescription": "You prioritize logic and structure.",
+    "displayName": "Display name",
+    "displayNamePlaceholder": "Pick a friendly name",
+    "avatar": "Avatar",
+    "uploadAvatar": "Upload avatar",
+    "changeAvatar": "Change avatar",
+    "avatarHint": "JPG or PNG, max 2MB",
+    "save": "Save profile",
+    "saving": "Saving...",
+    "saveSuccess": "Saved",
+    "saveFailed": "Save failed: {{error}}",
+    "uploadFailed": "Upload failed: {{error}}",
+    "fileTooLarge": "File too large. Please choose an image under 2MB",
+    "invalidFileType": "Unsupported format. Please choose JPG or PNG",
+    "stats": "Statistics",
+    "totalSelections": "Total Picks",
+    "topCategory": "Top Cuisine",
+    "historyCount": "{{count}} restaurants",
+    "personaGenerated": "Persona generated",
+    "exportReport": "Export Report",
+    "confirmedSelections": "Confirmed Selections",
+    "viewedButNotSelected": "Viewed But Not Selected"
+  },
+  "daily": {
+    "title": "Daily Picks",
+    "subtitle": "AI picks for lunch / afternoon tea / dinner based on your taste",
+    "refresh": "Regenerate",
+    "refreshing": "Generating...",
+    "loading": "Generating today's picks...",
+    "empty": "No picks yet. Try spinning once or regenerate.",
+    "error": "Failed to fetch daily picks: {{error}}",
+    "errorFallback": "Failed to generate daily picks",
+    "summary": "Today's headline",
+    "keywords": "Search keywords",
+    "tags": "Tags",
+    "cta": "Give it a try",
+    "notify": {
+      "title": "Meal / Tea reminders",
+      "desc": "Get a nudge at lunch, afternoon tea, and dinner with today's picks.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "turnOn": "Enable notifications",
+      "turnOff": "Disable",
+      "test": "Send test reminder",
+      "scheduleHint": "Reminder times: lunch {{lunch}} · tea {{tea}} · dinner {{dinner}}",
+      "unsupported": "Notifications are not supported in this environment.",
+      "permissionDenied": "Notification permission denied. Please allow and try again.",
+      "defaultTitle": "Food reminder",
+      "defaultBody": "Meal time! Check today's picks.",
+      "testTitle": "Notification test",
+      "testBody": "Notifications are on. You'll get nudges at meal time."
+    },
+    "slots": {
+      "lunch": {
+        "label": "Lunch",
+        "time": "11:45",
+        "hint": "Decide before the lunch rush",
+        "fallback": "Grab a warm lunch nearby",
+        "notifyTitle": "Lunch reminder"
+      },
+      "afternoon_tea": {
+        "label": "Afternoon tea / milk tea",
+        "time": "15:30",
+        "hint": "Milk tea or coffee boost",
+        "fallback": "Milk tea or coffee to recharge",
+        "notifyTitle": "Tea time reminder"
+      },
+      "dinner": {
+        "label": "Dinner",
+        "time": "18:30",
+        "hint": "Plan dinner before you leave",
+        "fallback": "Treat-yourself dinner ideas",
+        "notifyTitle": "Dinner reminder"
+      }
+    }
+  },
+  "recommendation": {
+    "title": "Warm Bites",
+    "subtitle": "A gentle nudge for what to eat next",
+    "label": "Recommendation",
+    "refresh": "Regenerate",
+    "refreshing": "Generating...",
+    "loadingTitle": "Generating today's picks...",
+    "loadingTagline": "Blending your tastes and history. Just a moment.",
+    "dish": "Try:",
+    "tip": "Click the notification to return anytime",
+    "cta": "Open to view today's picks",
+    "fallbackTitle": "Let's eat something kind today",
+    "fallbackTagline": "No rush—take it easy. You deserve a good bite today.",
+    "fallbackRestaurant": "Well-rated nearby spot",
+    "fallbackDish": "Signature dish",
+    "fallbackReason": "A safe, comforting choice—hard to go wrong.",
+    "error": "Failed to generate picks",
+    "errorWithMsg": "Failed to generate picks: {{error}}",
+    "needRecentSearch": "I don’t know what “nearby” means yet—search a location once on Home, then I’ll pull real places around you."
+  },
+  "persona": {
+    "title": "Your AI food persona",
+    "fallbackTitle": "Food persona",
+    "commentTitle": "Witty (but not mean) review",
+    "noReport": "No report yet",
+    "loves": "Loves",
+    "avoids": "Avoids",
+    "signature": "Signature dishes",
+    "nextTry": "One actionable tip",
+    "regenerate": "Regenerate"
+  },
+  "empty": {
+    "retry": "Try again",
+    "messages": [
+      {
+        "emoji": "🏜️",
+        "title": "Food desert alert!",
+        "subtitle": "Nothing nearby...",
+        "description": "We couldn't find a good match around you. Try increasing the distance or switching cuisines."
+      },
+      {
+        "emoji": "🔍",
+        "title": "Nothing here",
+        "subtitle": "No results found",
+        "description": "Your filters might be too strict. Remove a few tags or increase the distance."
+      },
+      {
+        "emoji": "🤔",
+        "title": "A bit quiet here",
+        "subtitle": "No tasty spots yet",
+        "description": "No restaurants matched your preferences nearby. Try a different area or tweak your cuisine choices."
+      }
+    ]
+  },
+  "error": {
+    "title": "Something went wrong",
+    "desc": "The app ran into an error. Please refresh and try again.",
+    "details": "Error details (dev)",
+    "reload": "Reload"
+  },
+  "result": {
+    "goEat": "Let's eat at",
+    "rating": "Rating:",
+    "distance": "Distance:",
+    "address": "Address:"
+  },
+  "select": {
+    "needLocation": "Please set a location first (auto or manual).",
+    "fetchFailed": "Failed to fetch restaurants. Please try again later.",
+    "unknownRestaurant": "Unknown restaurant",
+    "unknown": "Unknown"
+  },
+  "foods": {
+    "selected": "Selected:",
+    "categories": {
+      "正餐": "Main Meals",
+      "异域": "International",
+      "轻食": "Light",
+      "快餐夜宵": "Fast & Late-night",
+      "甜品饮品": "Dessert & Drinks"
+    },
+    "hints": {
+      "正餐": "Hearty & satisfying",
+      "异域": "Switch it up",
+      "轻食": "Light on you",
+      "快餐夜宵": "Craving fix",
+      "甜品饮品": "Something sweet"
+    },
+    "cuisines": {
+      "川湘菜": "Sichuan & Hunan",
+      "粤菜": "Cantonese",
+      "江浙菜": "Jiangsu & Zhejiang",
+      "西北菜": "Northwest China",
+      "日料": "Japanese",
+      "韩餐": "Korean",
+      "西餐": "Western",
+      "意餐": "Italian",
+      "泰餐": "Thai",
+      "沙拉": "Salad",
+      "三明治": "Sandwich",
+      "减脂餐": "Low-cal",
+      "汉堡": "Burger",
+      "麻辣烫": "Spicy hot pot",
+      "烧烤": "BBQ",
+      "火锅": "Hot pot",
+      "奶茶": "Milk tea",
+      "咖啡": "Coffee",
+      "蛋糕": "Cake"
+    }
+  },
+  "lang": {
+    "zh": "ZH",
+    "en": "EN"
+  },
+  "multiplayer": {
+    "multiplayer": "Group Pick",
+    "title": "Group Pick",
+    "subtitle": "Pick together with friends",
+    "createRoom": "Create Room",
+    "orJoin": "or",
+    "enterCode": "Enter code",
+    "join": "Join",
+    "needLogin": "Log in first",
+    "roomCode": "Room Code",
+    "shareTip": "Share with friends",
+    "status": "Status",
+    "startVoting": "Start",
+    "selectPreferences": "Preferences",
+    "waitingTip": "Wait for everyone, then host starts",
+    "votingTip": "Collecting preferences...",
+    "hostStart": "Start Pick",
+    "togetherSelect": "Together Pick",
+    "rolling": "Picking...",
+    "finalTitle": "This one",
+    "aiReasonPrefix": "AI says:",
+    "participants": "Joined",
+    "notSpicy": "Not spicy",
+    "fastFood": "Fast",
+    "goodEnvironment": "Nice place",
+    "groupFriendly": "Group",
+    "lightFood": "Light",
+    "budgetFriendly": "Budget",
+    "rulesTitle": "How it works",
+    "step1": "Host taps 'Create Room', gets 6-digit code",
+    "step2": "Share code with friends, they enter to join",
+    "step3": "Everyone picks tags (optional, e.g. not spicy, nice place)",
+    "step4": "Host taps 'Start Pick', AI picks based on weather & preferences",
+    "step5": "Result shows, go together",
+    "rulesNote": "Tip: Host needs location permission to find nearby spots"
+  }
+}
+

@@ -1,48 +1,66 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# =================================================================
+# 1. 基础依赖与构建产物
+# =================================================================
+node_modules/
+dist/
+build/
+bin/
+obj/
 
-node_modules
-dist
-dist-ssr
-*.local
+# =================================================================
+# 2. 环境变量与机密信息 (保护你的 Supabase/AI API Key)
+# =================================================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.keystore
+!android/keystore.properties.example
 
-# Editor directories and files
+# =================================================================
+# 3. iOS (针对你的 SPM 结构优化)
+# =================================================================
+# 忽略构建过程中的临时数据
+ios/App/build/
+ios/App/DerivedData/
+ios/App/.SwiftPM/
+ios/App/xcuserdata/
+
+# 操作系统产生的垃圾文件
+.DS_Store
+ios/.DS_Store
+ios/App/.DS_Store
+
+# 注意：不要忽略 .xcodeproj 和 .xcworkspace，否则 GitHub Actions 无法编译
+
+# =================================================================
+# 4. Android (针对你的文件树优化)
+# =================================================================
+android/.gradle/
+android/.idea/
+android/app/build/
+android/build/
+android/local.properties
+android/capacitor-cordova-android-plugins/build/
+android/.gradle/8.14.3/
+
+# =================================================================
+# 5. Expo 子项目 (WhatToEatToday 目录)
+# =================================================================
+WhatToEatToday/node_modules/
+WhatToEatToday/.expo/
+WhatToEatToday/.vscode/
+WhatToEatToday/dist/
+
+# =================================================================
+# 6. 编辑器与系统
+# =================================================================
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-
-# Vercel
-.vercel
-
-# Android / Capacitor
-android/.gradle
-android/.idea
-android/local.properties
-android/app/build
-android/build
-android/.gradle
-android/captures
-android/*.iml
-android/.externalNativeBuild
-android/.cxx
-*.keystore
-!*.keystore.example
-android/keystore.properties
-*.jks
+*.swp

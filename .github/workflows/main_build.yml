@@ -27,18 +27,38 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --legacy-peer-deps
+
+      - name: Verify Capacitor iOS dependency
+        run: |
+          echo "Checking for @capacitor/ios dependency..."
+          if [ -d "node_modules/@capacitor/ios" ]; then
+            echo "✓ @capacitor/ios found in node_modules"
+            ls -R node_modules/@capacitor/ios | head -20
+          else
+            echo "✗ ERROR: @capacitor/ios not found in node_modules"
+            echo "Installing @capacitor/ios explicitly..."
+            npm install @capacitor/ios --legacy-peer-deps
+            ls -R node_modules/@capacitor/ios | head -20
+          fi
 
       - name: Build web app
         run: npm run build
+
+      - name: Verify dist folder
+        run: |
+          if [ -d "dist" ]; then
+            echo "✓ dist folder created successfully"
+            ls -la dist | head -10
+          else
+            echo "✗ ERROR: dist folder not found"
+            exit 1
+          fi
 
       - name: Install CocoaPods
         run: |
           sudo gem install cocoapods
           pod --version
-
-      - name: Install Capacitor CLI globally
-        run: npm install -g @capacitor/cli
 
       - name: Setup iOS platform
         run: |
@@ -56,11 +76,20 @@ jobs:
         run: |
           if [ -f "ios/App/Podfile" ]; then
             cd ios/App
+            # Grant execute permissions to scripts
+            if [ -f "Podfile.lock" ]; then
+              chmod +x Podfile.lock || true
+            fi
+            # Ensure we're in the correct directory
+            pwd
+            ls -la | head -10
+            # Install pods
             pod install
             cd ../..
             echo "CocoaPods dependencies installed successfully"
           else
             echo "Podfile not found, skipping pod install"
+            exit 1
           fi
 
       - name: Setup Xcode
@@ -98,10 +127,13 @@ jobs:
           # Check if workspace exists, otherwise use project
           if [ -f "App.xcworkspace/contents.xcworkspacedata" ]; then
             XCODE_PROJECT="-workspace App.xcworkspace"
+            echo "Using workspace: App.xcworkspace"
           else
             XCODE_PROJECT="-project App.xcodeproj"
+            echo "Using project: App.xcodeproj"
           fi
           
+          # Build with unsigned configuration
           xcodebuild $XCODE_PROJECT \
             -scheme App \
             -configuration Release \
@@ -109,8 +141,10 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_ENTITLEMENTS="" \
             DEVELOPMENT_TEAM="" \
             PROVISIONING_PROFILE_SPECIFIER="" \
+            PROVISIONING_PROFILE="" \
             -archivePath build/App.xcarchive \
             archive
 
