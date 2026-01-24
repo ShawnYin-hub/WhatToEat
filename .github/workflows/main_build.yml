@@ -1,0 +1,150 @@
+name: Build iOS App
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'capacitor.config.ts'
+      - '.github/workflows/main_build.yml'
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Install CocoaPods
+        run: |
+          sudo gem install cocoapods
+          pod --version
+
+      - name: Install Capacitor CLI globally
+        run: npm install -g @capacitor/cli
+
+      - name: Add iOS platform (if not exists)
+        run: |
+          if [ ! -d "ios/App" ]; then
+            echo "Adding iOS platform..."
+            npx cap add ios
+          else
+            echo "iOS platform already exists"
+          fi
+
+      - name: Install CocoaPods dependencies
+        run: |
+          if [ -f "ios/App/Podfile" ]; then
+            cd ios/App
+            pod install
+            cd ../..
+          else
+            echo "Podfile not found, skipping pod install"
+          fi
+
+      - name: Sync Capacitor
+        run: npx cap sync ios
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Check and Set Bundle ID
+        run: |
+          if [ -f "ios/App/App.xcodeproj/project.pbxproj" ]; then
+            # Get the expected Bundle ID from capacitor.config.ts
+            EXPECTED_BUNDLE_ID="com.whattoeat.today"
+            
+            # Check current Bundle ID in all build configurations
+            CURRENT_BUNDLE_ID=$(grep -m 1 'PRODUCT_BUNDLE_IDENTIFIER = [^;]*' ios/App/App.xcodeproj/project.pbxproj | sed 's/.*PRODUCT_BUNDLE_IDENTIFIER = \([^;]*\);.*/\1/' | head -1)
+            echo "Current Bundle ID: $CURRENT_BUNDLE_ID"
+            echo "Expected Bundle ID: $EXPECTED_BUNDLE_ID"
+            
+            # Update Bundle ID if it's not correct (handles both default and any other value)
+            if [ "$CURRENT_BUNDLE_ID" != "$EXPECTED_BUNDLE_ID" ]; then
+              echo "Updating Bundle ID to $EXPECTED_BUNDLE_ID"
+              # Replace all occurrences of PRODUCT_BUNDLE_IDENTIFIER
+              sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*/PRODUCT_BUNDLE_IDENTIFIER = $EXPECTED_BUNDLE_ID/g" ios/App/App.xcodeproj/project.pbxproj
+              echo "Bundle ID updated successfully"
+            else
+              echo "Bundle ID is already correct"
+            fi
+          else
+            echo "Xcode project not found yet, Capacitor will create it with the correct Bundle ID from capacitor.config.ts"
+          fi
+
+      - name: Build iOS app (unsigned)
+        run: |
+          cd ios/App
+          # Check if workspace exists, otherwise use project
+          if [ -f "App.xcworkspace/contents.xcworkspacedata" ]; then
+            XCODE_PROJECT="-workspace App.xcworkspace"
+          else
+            XCODE_PROJECT="-project App.xcodeproj"
+          fi
+          
+          xcodebuild $XCODE_PROJECT \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            -archivePath build/App.xcarchive \
+            archive
+
+      - name: Extract .app from archive
+        run: |
+          cd ios/App
+          mkdir -p build/export
+          # Extract .app from the archive
+          if [ -d "build/App.xcarchive/Products/Applications/App.app" ]; then
+            cp -r build/App.xcarchive/Products/Applications/App.app build/export/
+            echo "App.app extracted successfully"
+          else
+            echo "Error: App.app not found in archive"
+            ls -la build/App.xcarchive/Products/Applications/ || true
+            exit 1
+          fi
+
+      - name: Create .zip archive
+        run: |
+          cd ios/App/build/export
+          if [ -d "App.app" ]; then
+            zip -r WhatToEatToday-unsigned.zip App.app
+            echo "Created WhatToEatToday-unsigned.zip"
+            ls -lh WhatToEatToday-unsigned.zip
+          else
+            echo "Error: App.app not found"
+            exit 1
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-app-unsigned
+          path: |
+            ios/App/build/export/WhatToEatToday-unsigned.zip
+            ios/App/build/export/App.app
+          retention-days: 30
+          if-no-files-found: error
