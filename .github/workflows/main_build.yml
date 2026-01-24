@@ -3,13 +3,14 @@ name: Build iOS App
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
-      - master
+    branches: [main, master]
+    # 仅在代码或配置变动时触发，避免不必要的构建
     paths:
       - 'src/**'
+      - 'public/**'
       - 'package.json'
       - 'capacitor.config.ts'
+      - 'ios/**'
       - '.github/workflows/main_build.yml'
 
 jobs:
@@ -23,163 +24,59 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '22' # 匹配 Capacitor 8 的硬性要求
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Verify Capacitor iOS dependency
-        run: |
-          echo "Checking for @capacitor/ios dependency..."
-          if [ -d "node_modules/@capacitor/ios" ]; then
-            echo "✓ @capacitor/ios found in node_modules"
-            ls -R node_modules/@capacitor/ios | head -20
-          else
-            echo "✗ ERROR: @capacitor/ios not found in node_modules"
-            echo "Installing @capacitor/ios explicitly..."
-            npm install @capacitor/ios --legacy-peer-deps
-            ls -R node_modules/@capacitor/ios | head -20
-          fi
-
-      - name: Build web app
+      - name: Build Web App
         run: npm run build
 
-      - name: Verify dist folder
-        run: |
-          if [ -d "dist" ]; then
-            echo "✓ dist folder created successfully"
-            ls -la dist | head -10
-          else
-            echo "✗ ERROR: dist folder not found"
-            exit 1
-          fi
-
-      - name: Install CocoaPods
-        run: |
-          sudo gem install cocoapods
-          pod --version
-
-      - name: Setup iOS platform
-        run: |
-          if [ -d "ios" ]; then
-            echo "iOS folder already exists, skipping 'cap add ios'"
-          else
-            echo "iOS folder not found, adding iOS platform..."
-            npx cap add ios
-          fi
-
-      - name: Sync Capacitor
+      - name: Capacitor Sync
+        # 此步会将 Web 产物同步到 ios/App/App/public 目录
         run: npx cap sync ios
-
-      - name: Install CocoaPods dependencies
-        run: |
-          if [ -f "ios/App/Podfile" ]; then
-            cd ios/App
-            # Grant execute permissions to scripts
-            if [ -f "Podfile.lock" ]; then
-              chmod +x Podfile.lock || true
-            fi
-            # Ensure we're in the correct directory
-            pwd
-            ls -la | head -10
-            # Install pods
-            pod install
-            cd ../..
-            echo "CocoaPods dependencies installed successfully"
-          else
-            echo "Podfile not found, skipping pod install"
-            exit 1
-          fi
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest-stable
 
-      - name: Check and Set Bundle ID
-        run: |
-          if [ -f "ios/App/App.xcodeproj/project.pbxproj" ]; then
-            # Get the expected Bundle ID from capacitor.config.ts
-            EXPECTED_BUNDLE_ID="com.whattoeat.today"
-            
-            # Check current Bundle ID in all build configurations
-            CURRENT_BUNDLE_ID=$(grep -m 1 'PRODUCT_BUNDLE_IDENTIFIER = [^;]*' ios/App/App.xcodeproj/project.pbxproj | sed 's/.*PRODUCT_BUNDLE_IDENTIFIER = \([^;]*\);.*/\1/' | head -1)
-            echo "Current Bundle ID: $CURRENT_BUNDLE_ID"
-            echo "Expected Bundle ID: $EXPECTED_BUNDLE_ID"
-            
-            # Update Bundle ID if it's not correct (handles both default and any other value)
-            if [ "$CURRENT_BUNDLE_ID" != "$EXPECTED_BUNDLE_ID" ]; then
-              echo "Updating Bundle ID to $EXPECTED_BUNDLE_ID"
-              # Replace all occurrences of PRODUCT_BUNDLE_IDENTIFIER
-              sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = [^;]*/PRODUCT_BUNDLE_IDENTIFIER = $EXPECTED_BUNDLE_ID/g" ios/App/App.xcodeproj/project.pbxproj
-              echo "Bundle ID updated successfully"
-            else
-              echo "Bundle ID is already correct"
-            fi
-          else
-            echo "Xcode project not found yet, Capacitor will create it with the correct Bundle ID from capacitor.config.ts"
-          fi
-
-      - name: Build iOS app (unsigned)
+      - name: Build iOS App (Unsigned via SPM)
+        # 核心步骤：直接编译 .xcodeproj，Xcode 会自动处理 Package.swift 中的依赖
         run: |
           cd ios/App
-          # Check if workspace exists, otherwise use project
-          if [ -f "App.xcworkspace/contents.xcworkspacedata" ]; then
-            XCODE_PROJECT="-workspace App.xcworkspace"
-            echo "Using workspace: App.xcworkspace"
-          else
-            XCODE_PROJECT="-project App.xcodeproj"
-            echo "Using project: App.xcodeproj"
-          fi
-          
-          # Build with unsigned configuration
-          xcodebuild $XCODE_PROJECT \
+          xcodebuild -project App.xcodeproj \
             -scheme App \
             -configuration Release \
             -destination 'generic/platform=iOS' \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
             CODE_SIGN_ENTITLEMENTS="" \
             DEVELOPMENT_TEAM="" \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            PROVISIONING_PROFILE="" \
             -archivePath build/App.xcarchive \
             archive
 
-      - name: Extract .app from archive
+      - name: Package IPA (Payload for Sideloadly)
+        # 创建符合 iOS 安装规范的 Payload 结构，以便 Sideloadly 直接识别
         run: |
-          cd ios/App
-          mkdir -p build/export
-          # Extract .app from the archive
-          if [ -d "build/App.xcarchive/Products/Applications/App.app" ]; then
-            cp -r build/App.xcarchive/Products/Applications/App.app build/export/
-            echo "App.app extracted successfully"
+          mkdir -p Payload
+          # 动态搜索生成的 .app 文件并拷贝
+          APP_PATH=$(find ios/App/build -name "App.app" -type d | head -1)
+          if [ -d "$APP_PATH" ]; then
+            echo "Found App at $APP_PATH"
+            cp -r "$APP_PATH" Payload/
+            zip -r WhatToEatToday-unsigned.ipa Payload
           else
-            echo "Error: App.app not found in archive"
-            ls -la build/App.xcarchive/Products/Applications/ || true
+            echo "Error: App.app not found in build directory"
             exit 1
           fi
 
-      - name: Create .zip archive
-        run: |
-          cd ios/App/build/export
-          if [ -d "App.app" ]; then
-            zip -r WhatToEatToday-unsigned.zip App.app
-            echo "Created WhatToEatToday-unsigned.zip"
-            ls -lh WhatToEatToday-unsigned.zip
-          else
-            echo "Error: App.app not found"
-            exit 1
-          fi
-
-      - name: Upload artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-app-unsigned
-          path: |
-            ios/App/build/export/WhatToEatToday-unsigned.zip
-            ios/App/build/export/App.app
-          retention-days: 30
-          if-no-files-found: error
+          name: ios-ipa-unsigned
+          path: WhatToEatToday-unsigned.ipa
+          retention-days: 7
