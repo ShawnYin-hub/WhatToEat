@@ -32,6 +32,15 @@ function MainApp() {
   const [range, setRange] = useState(2000)
   const [location, setLocation] = useState(null)
 
+  // 调试：输出状态信息
+  useEffect(() => {
+    console.log('📱 App.jsx: 组件已渲染')
+    console.log('📱 App.jsx: loading =', loading)
+    console.log('📱 App.jsx: user =', user ? '已登录' : '未登录')
+    console.log('📱 App.jsx: guestMode =', guestMode)
+    console.log('📱 App.jsx: currentPage =', currentPage)
+  }, [loading, user, guestMode, currentPage])
+
   // 监听 hash，便于通知点击后跳转
   useEffect(() => {
     const handleHash = () => {
