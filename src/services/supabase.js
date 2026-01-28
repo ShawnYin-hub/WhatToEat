@@ -1,10 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Supabase 配置
-// 注意：这些值应该从环境变量中读取，但为了简化，这里先硬编码
-// 用户需要在 Supabase 项目中获取这些值
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'YOUR_SUPABASE_URL'
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY'
+// 注意：这些值应该从环境变量中读取，如果没有环境变量则使用默认值
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://kjsbpejwcyakpkherdaf.supabase.co'
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+
+// 检测是否在 Capacitor 环境中（iOS/Android）
+const isCapacitor = typeof window !== 'undefined' && 
+  (window.location.protocol === 'capacitor:' || 
+   window.location.protocol === 'ionic:' ||
+   window.Capacitor !== undefined)
 
 // 检测是否在开发/预览环境（localhost）
 const isLocalDev = typeof window !== 'undefined' && 
@@ -13,9 +18,21 @@ const isLocalDev = typeof window !== 'undefined' &&
 // 检测是否是开发服务器（端口 5173，支持代理）
 const isDevServer = isLocalDev && window.location.port === '5173'
 
-// 在开发服务器环境中使用代理路径（预览服务器不支持代理）
+// 获取 Supabase URL
 const getSupabaseUrl = () => {
-  // 只在开发服务器（端口 5173）中使用代理，预览服务器（4173）直接使用原始 URL
+  // 验证 URL 是否有效
+  if (!SUPABASE_URL || !SUPABASE_URL.startsWith('http')) {
+    console.error('❌ Supabase URL 配置错误:', SUPABASE_URL)
+    console.error('请在 .env 文件中设置 VITE_SUPABASE_URL 和 VITE_SUPABASE_ANON_KEY')
+    throw new Error('Supabase URL 未配置或格式错误。URL 必须以 http:// 或 https:// 开头')
+  }
+
+  // 在 Capacitor 环境中，始终使用原始 URL（不使用代理）
+  if (isCapacitor) {
+    return SUPABASE_URL
+  }
+
+  // 只在开发服务器（端口 5173）中使用代理
   if (isDevServer && SUPABASE_URL.includes('supabase.co')) {
     // 提取 Supabase 项目 ID
     const projectId = SUPABASE_URL.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1]
@@ -24,6 +41,7 @@ const getSupabaseUrl = () => {
       return `${window.location.origin}/api/supabase`
     }
   }
+  
   // 预览服务器或生产环境直接使用原始 URL
   return SUPABASE_URL
 }
@@ -31,11 +49,18 @@ const getSupabaseUrl = () => {
 // 自定义 fetch，仅在开发服务器中使用代理
 const customFetch = (url, options = {}) => {
   let finalUrl = url
+  
+  // 在 Capacitor 环境中，不使用代理
+  if (isCapacitor) {
+    return fetch(finalUrl, options)
+  }
+  
   // 只在开发服务器（端口 5173）中使用代理
   if (isDevServer && typeof url === 'string' && url.includes('supabase.co')) {
     // 将 Supabase URL 替换为代理路径
     finalUrl = url.replace(/https:\/\/[^/]+\.supabase\.co/, `${window.location.origin}/api/supabase`)
   }
+  
   return fetch(finalUrl, options)
 }
 
