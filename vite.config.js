@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  base: '/', // Capacitor 需要绝对路径
   plugins: [
     react(),
     // 自定义插件：完全禁用 host 检查（用于内网穿透工具）
