@@ -6,7 +6,10 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https',
-    // 如果需要调试，可以取消下面的注释启用本地服务器
+    iosScheme: 'https',
+    // 开发模式：取消注释以连接到本地开发服务器
+    // 注意：需要将 localhost 替换为你的电脑局域网 IP 地址
+    // 例如：url: 'http://192.168.1.100:5173',
     // url: 'http://localhost:5173',
     // cleartext: true
   },

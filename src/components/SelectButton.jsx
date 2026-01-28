@@ -5,6 +5,7 @@ import { searchRestaurants } from '../services/locationService'
 import { databaseService } from '../services/databaseService'
 import { useAuth } from '../contexts/AuthContext'
 import { getWeightedRecommendation } from '../services/recommendationEngine'
+import { filterRestaurantsByFoods, getSearchKeywords } from '../services/foodMappingService'
 import ResultModal from './ResultModal'
 import SlotMachine from './SlotMachine'
 import EmptyState from './EmptyState'
@@ -75,16 +76,24 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
     setDecisionReason('')
 
     try {
+      // 获取搜索关键词（将用户选择的菜品转换为地图API可识别的关键词）
+      const searchKeywords = getSearchKeywords(selectedFoods)
+      
       // 调用地图服务 API
       const result = await searchRestaurants(
         {
           location,
           radius: range,
-          keywords: selectedFoods,
+          keywords: searchKeywords.length > 0 ? searchKeywords : selectedFoods,
         },
         mapService
       )
-      const pois = result.pois
+      let pois = result.pois || []
+
+      // 如果用户选择了特定菜品，过滤结果确保只返回匹配的餐厅
+      if (selectedFoods && selectedFoods.length > 0) {
+        pois = filterRestaurantsByFoods(pois, selectedFoods)
+      }
 
       if (pois.length === 0) {
         setIsLoading(false)
@@ -97,7 +106,7 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
         setShowEmptyState(false)
       }
 
-      // 保存所有餐厅用于换一家功能
+      // 保存所有餐厅用于换一家功能（已经是过滤后的结果）
       setAllRestaurants(pois)
 
       // 如果用户已登录，记录搜索历史
@@ -116,6 +125,7 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
       }
 
       // 在开始老虎机动画前，尝试调用 AI 权重推荐
+      // 注意：pois 已经是过滤后的结果，只包含匹配用户选择菜品的餐厅
       try {
         const weatherLocation =
           location && (location.latitude && location.longitude)
@@ -128,7 +138,8 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
           userId: user?.id || null,
           location: weatherLocation,
           mood: null, // 预留心情参数，后续可从 UI 传入
-          candidates: pois,
+          candidates: pois, // 已经是过滤后的结果
+          selectedFoods: selectedFoods, // 传递用户选择的菜品，供AI参考
         })
 
         if (bestRestaurantId) {
@@ -156,6 +167,7 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
 
   const handleSlotComplete = async () => {
     // 老虎机动画完成，优先选择 AI 推荐的餐厅，若没有则随机
+    // 注意：allRestaurants 已经是过滤后的结果，只包含匹配用户选择菜品的餐厅
     if (allRestaurants.length > 0) {
       let target = null
 
@@ -168,9 +180,18 @@ function SelectButton({ selectedFoods, range, location, mapService = 'amap' }) {
               poi.poiId === preferredRestaurantId ||
               poi.name === preferredRestaurantId
           ) || null
+        
+        // 如果AI推荐的餐厅不匹配用户选择的菜品，重新过滤
+        if (target && selectedFoods && selectedFoods.length > 0) {
+          const matches = filterRestaurantsByFoods([target], selectedFoods)
+          if (matches.length === 0) {
+            target = null // AI推荐的餐厅不匹配，重置为null
+          }
+        }
       }
 
       if (!target) {
+        // 随机选择，但确保从已过滤的列表中随机（已经是匹配的）
         target = getRandomRestaurant(allRestaurants)
       }
 

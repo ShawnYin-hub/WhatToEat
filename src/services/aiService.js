@@ -1,6 +1,9 @@
 // AI 推荐服务：结合画像与搜索/选择历史调用 DeepSeek 生成每日推荐
 const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || ''
-const DEEPSEEK_BASE_URL = (import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com/').replace(/\/+$/, '')
+// 开发环境使用代理，生产环境直接调用
+const DEEPSEEK_BASE_URL = import.meta.env.DEV
+  ? '/api/deepseek'  // 开发环境使用代理
+  : (import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com/').replace(/\/+$/, '')
 const DEEPSEEK_COMPLETIONS_URL = `${DEEPSEEK_BASE_URL}/v1/chat/completions`
 
 import i18n from '../i18n'
@@ -172,14 +175,15 @@ export async function generateAiRecommendations({ selectionHistory = [], searchH
       error: null,
     }
   } catch (error) {
-    console.error('生成 AI 推荐失败', error)
+    console.warn('生成 AI 推荐失败（已降级）:', error.message || error)
+    // 降级：返回默认推荐，不阻塞页面
     return {
       data: {
         title: '今天想好好吃一顿',
-        tagline: '不急，慢慢挑～就算今天状态一般，也值得吃点好的。',
+        tagline: '不急，慢慢挑～我给你备了几条温柔的选择。',
         restaurants: fallbackCopyForNoParse(),
       },
-      error: error.message || '生成推荐失败',
+      error: null, // 不显示错误，让页面正常显示
     }
   }
 }

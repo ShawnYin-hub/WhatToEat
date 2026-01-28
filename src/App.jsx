@@ -97,7 +97,7 @@ function MainApp() {
         animate={{ opacity: 1, filter: 'blur(0px)' }}
         exit={{ opacity: 0, filter: 'blur(2px)' }}
         transition={{ duration: 0.18, ease: 'easeOut' }}
-        className="safe-area-container bg-apple-bg flex flex-col relative overflow-hidden i18n-fade"
+        className="safe-area-container bg-apple-bg flex flex-col relative overflow-x-hidden overflow-y-auto i18n-fade"
       >
         {/* 背景渐变动效 */}
         <div className="fixed inset-0 -z-10">

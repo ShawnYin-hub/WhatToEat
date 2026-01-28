@@ -1,6 +1,9 @@
 // DeepSeek API 服务（从环境变量读取）
 const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || ''
-const DEEPSEEK_BASE_URL = (import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com/').replace(/\/+$/, '')
+// 开发环境使用代理，生产环境直接调用
+const DEEPSEEK_BASE_URL = import.meta.env.DEV
+  ? '/api/deepseek'  // 开发环境使用代理
+  : (import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com/').replace(/\/+$/, '')
 const DEEPSEEK_COMPLETIONS_URL = `${DEEPSEEK_BASE_URL}/v1/chat/completions`
 
 import i18n from '../i18n'
@@ -235,10 +238,19 @@ export const deepseekService = {
         error: null,
       }
     } catch (error) {
-      console.error('DeepSeek API 错误:', error)
+      console.warn('DeepSeek API 错误（已降级）:', error.message || error)
+      // 降级：返回空数据，不阻塞页面
       return {
-        data: null,
-        error: error.message || '生成画像失败',
+        data: {
+          title: '美食探索者',
+          report: '你正在探索各种美食，保持好奇心，继续尝试新口味吧！',
+          tags: ['探索中'],
+          loves: [],
+          avoids: [],
+          signature_dishes: [],
+          next_try: '',
+        },
+        error: null, // 不显示错误，让页面正常显示
       }
     }
   },
@@ -319,10 +331,14 @@ export const deepseekService = {
         error: null,
       }
     } catch (error) {
-      console.error('DeepSeek API 错误:', error)
+      console.warn('DeepSeek API 错误（已降级）:', error.message || error)
+      // 降级：返回空推荐，不阻塞页面
       return {
-        data: null,
-        error: error.message || '生成每日推荐失败',
+        data: {
+          summary: '今天也要好好吃饭',
+          slots: [],
+        },
+        error: null, // 不显示错误，让页面正常显示
       }
     }
   },

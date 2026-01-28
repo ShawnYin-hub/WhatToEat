@@ -2,9 +2,12 @@
  * 高德地图地理编码 API - 地址转经纬度
  */
 
-// 直接使用 HTTPS API
+// 使用代理或直接调用
 const AMAP_API_KEY = import.meta.env.VITE_AMAP_KEY || ''
-const GEOCODE_API_BASE_URL = 'https://restapi.amap.com/v3/geocode/geo'
+// 开发环境使用代理，生产环境直接调用
+const GEOCODE_API_BASE_URL = import.meta.env.DEV
+  ? '/api/amap/v3/geocode/geo'  // 开发环境使用代理
+  : 'https://restapi.amap.com/v3/geocode/geo'  // 生产环境直接调用
 
 /**
  * 将地址转换为经纬度

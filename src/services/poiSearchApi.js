@@ -2,9 +2,12 @@
  * 高德地图 POI 搜索 API - 更精确的地点搜索
  */
 
-// 直接使用 HTTPS API
+// 使用代理或直接调用
 const AMAP_API_KEY = import.meta.env.VITE_AMAP_KEY || ''
-const POI_SEARCH_API_BASE_URL = 'https://restapi.amap.com/v3/place/text'
+// 开发环境使用代理，生产环境直接调用
+const POI_SEARCH_API_BASE_URL = import.meta.env.DEV
+  ? '/api/amap/v3/place/text'  // 开发环境使用代理
+  : 'https://restapi.amap.com/v3/place/text'  // 生产环境直接调用
 
 /**
  * 搜索地点（POI搜索，比地理编码更准确）
@@ -101,13 +104,15 @@ export async function searchPOI(keyword) {
       formatted_address: `${poi.pname}${poi.cityname}${poi.adname}${poi.address || ''}`,
     }))
   } catch (error) {
-    console.error('POI 搜索失败:', error)
-
-    if (error.message.includes('fetch')) {
-      throw new Error('网络请求失败，请检查网络连接或稍后重试')
+    console.warn('POI 搜索失败（已降级）:', error.message || error)
+    
+    // 降级：返回空数组，不阻塞页面
+    if (error.message.includes('fetch') || error.message.includes('CONNECTION')) {
+      return [] // 网络错误时返回空数组，让 UI 正常显示
     }
-
-    throw error
+    
+    // 其他错误也返回空数组，不抛出异常
+    return []
   }
 }
 

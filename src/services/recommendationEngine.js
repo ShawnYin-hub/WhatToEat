@@ -2,10 +2,13 @@
 
 import { getCurrentWeather } from './weatherService'
 import { databaseService } from './databaseService'
+import { matchesSelectedFoods } from './foodMappingService'
 
 const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY || ''
-const DEEPSEEK_BASE_URL = (import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com/')
-  .replace(/\/+$/, '')
+// 开发环境使用代理，生产环境直接调用
+const DEEPSEEK_BASE_URL = import.meta.env.DEV
+  ? '/api/deepseek'  // 开发环境使用代理
+  : (import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com/').replace(/\/+$/, '')
 const DEEPSEEK_COMPLETIONS_URL = `${DEEPSEEK_BASE_URL}/v1/chat/completions`
 
 /**
@@ -131,6 +134,7 @@ function buildAiPrompt({
   candidates,
   groupPreferences = null,
   hasHistory = true,
+  selectedFoods = [],
 }) {
   const weatherBrief = {
     text: weather?.text || '未知',
@@ -178,6 +182,8 @@ function buildAiPrompt({
 
   const user = `下面是今天的上下文信息（JSON 格式）。请基于这些信息，在 candidates 中选择"今天最推荐的一家餐厅"，并解释一句原因。
 
+${selectedFoods && selectedFoods.length > 0 ? `**重要**：用户明确选择了以下菜品类型：${selectedFoods.join('、')}。你必须从匹配这些菜品类型的餐厅中选择，不能选择其他类型的餐厅。` : ''}
+
 返回严格 JSON：
 {
   "best_restaurant_id": "候选列表中的 id 或 name",
@@ -193,6 +199,7 @@ function buildAiPrompt({
   - 清淡/轻食/冷饮类选项（可通过 category/名称中包含"轻食/沙拉/凉菜/冷饮/奶茶/咖啡"等判断）。
 ${historyNote}
 - 若存在 group_preferences（多人偏好），在保证以上规则的前提下，优先满足大家都能接受的交集。
+${selectedFoods && selectedFoods.length > 0 ? `- **必须遵守**：只能从匹配用户选择菜品（${selectedFoods.join('、')}）的餐厅中选择。` : ''}
 
 以下是上下文 JSON：
 ${userJson}`
@@ -306,7 +313,8 @@ function pickBySimpleRules(candidates = [], dislikedCategories = []) {
  *  location: { latitude: number, longitude: number } | null,
  *  mood?: string | string[],
  *  candidates: any[],
- *  groupPreferences?: any
+ *  groupPreferences?: any,
+ *  selectedFoods?: string[]
  * }} params
  */
 export async function getWeightedRecommendation({
@@ -315,6 +323,7 @@ export async function getWeightedRecommendation({
   mood,
   candidates,
   groupPreferences = null,
+  selectedFoods = [],
 }) {
   // 如果没有候选，直接返回空
   if (!Array.isArray(candidates) || candidates.length === 0) {
@@ -324,6 +333,25 @@ export async function getWeightedRecommendation({
       decision_reason: '',
       rankedCandidates: [],
       error: '没有候选餐厅',
+    }
+  }
+
+  // 如果用户选择了特定菜品，先过滤候选列表，确保只包含匹配的餐厅
+  let filteredCandidates = candidates
+  if (selectedFoods && selectedFoods.length > 0) {
+    filteredCandidates = candidates.filter((candidate) =>
+      matchesSelectedFoods(candidate, selectedFoods)
+    )
+    
+    // 如果过滤后没有候选，返回空
+    if (filteredCandidates.length === 0) {
+      return {
+        bestRestaurantId: null,
+        bestRestaurantName: '',
+        decision_reason: '',
+        rankedCandidates: [],
+        error: '没有匹配所选菜品的餐厅',
+      }
     }
   }
 
@@ -342,16 +370,16 @@ export async function getWeightedRecommendation({
 
   const selectionAnalysis = analyzeSelectionHistory(selectionHistory)
   const viewAnalysis = analyzeViewButNotSelected(viewHistory, selectionHistory)
-  const aiCandidates = mapCandidatesForAi(candidates)
+  const aiCandidates = mapCandidatesForAi(filteredCandidates) // 使用过滤后的候选列表
 
   // 如果用户有明确不喜欢的类型，在本地也过滤一下候选列表（作为辅助，AI 也会考虑）
-  let filteredCandidates = aiCandidates
+  let finalCandidates = aiCandidates
   if (viewAnalysis.dislikedCategories.length > 0) {
     const dislikedCategorySet = new Set(
       viewAnalysis.dislikedCategories.map((d) => d.category.toLowerCase())
     )
     // 不直接过滤，而是标记，让 AI 做最终决策
-    filteredCandidates = aiCandidates.map((c) => ({
+    finalCandidates = aiCandidates.map((c) => ({
       ...c,
       is_disliked_category: dislikedCategorySet.has((c.category || '').toLowerCase()),
     }))
@@ -362,9 +390,10 @@ export async function getWeightedRecommendation({
     mood,
     selectionAnalysis,
     viewAnalysis,
-    candidates: filteredCandidates,
+    candidates: finalCandidates,
     groupPreferences,
     hasHistory,
+    selectedFoods, // 传递用户选择的菜品
   })
 
   const { data: aiResult, error: aiError } = await callDeepseekForRecommendation(prompt)
@@ -385,9 +414,15 @@ export async function getWeightedRecommendation({
   }
 
   if (!best) {
-    // fallback 简单规则（也考虑用户不喜欢的类型）
+    // fallback 简单规则（也考虑用户不喜欢的类型和选择的菜品）
     best = pickBySimpleRules(
-      aiCandidates,
+      aiCandidates.filter((c) => {
+        // 确保fallback也匹配用户选择的菜品
+        if (selectedFoods && selectedFoods.length > 0) {
+          return matchesSelectedFoods(c, selectedFoods)
+        }
+        return true
+      }),
       viewAnalysis.dislikedCategories.map((d) => d.category)
     )
     if (!decisionReason) {

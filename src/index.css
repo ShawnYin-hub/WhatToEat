@@ -17,14 +17,7 @@ body {
   /* 移动端优化 */
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  /* Safe-area（刘海/挖孔/状态栏/底部手势条）适配：
-     - iOS Safari / iOS WebView 支持 env(safe-area-inset-*)
-     - Android 大多数机型会是 0，但配合原生窗口 Insets 也能避免遮挡 */
-  padding-top: var(--safe-area-top);
-  padding-right: var(--safe-area-right);
-  padding-bottom: var(--safe-area-bottom);
-  padding-left: var(--safe-area-left);
-  /* Prefer modern dynamic viewport units to avoid status bar / cutout overlap jitter */
+  /* 视口高度，避免因状态栏高度变化导致跳动 */
   min-height: 100dvh;
 }
 
