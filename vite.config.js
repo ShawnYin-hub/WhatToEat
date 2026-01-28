@@ -120,8 +120,18 @@ export default defineConfig({
         secure: true,
         configure: (proxy, _options) => {
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            // 保留必要的头部
-            proxyReq.setHeader('apikey', process.env.VITE_SUPABASE_ANON_KEY || '')
+            // 确保 apikey 头部正确传递（从请求头中获取，如果没有则从环境变量）
+            const apikey = req.headers['apikey'] || process.env.VITE_SUPABASE_ANON_KEY || ''
+            if (apikey) {
+              proxyReq.setHeader('apikey', apikey)
+            }
+            // 确保其他必要的头部也被传递
+            if (req.headers['authorization']) {
+              proxyReq.setHeader('authorization', req.headers['authorization'])
+            }
+            if (req.headers['content-type']) {
+              proxyReq.setHeader('content-type', req.headers['content-type'])
+            }
           })
         },
       },
@@ -138,7 +148,18 @@ export default defineConfig({
         secure: true,
         configure: (proxy, _options) => {
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            proxyReq.setHeader('apikey', process.env.VITE_SUPABASE_ANON_KEY || '')
+            // 从请求头中获取 apikey，如果没有则从环境变量读取
+            const apikey = req.headers['apikey'] || process.env.VITE_SUPABASE_ANON_KEY || ''
+            if (apikey) {
+              proxyReq.setHeader('apikey', apikey)
+            }
+            // 确保其他必要的头部也被传递
+            if (req.headers['authorization']) {
+              proxyReq.setHeader('authorization', req.headers['authorization'])
+            }
+            if (req.headers['content-type']) {
+              proxyReq.setHeader('content-type', req.headers['content-type'])
+            }
           })
         },
       },
