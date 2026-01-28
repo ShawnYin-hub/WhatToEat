@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Supabase 配置
-// 注意：这些值应该从环境变量中读取，如果没有环境变量则使用默认值
+// 注意：这些值应该从环境变量中读取。
+// iOS 真机/模拟器打包时，如果没注入 env，会走默认值；默认值必须是“非空字符串”，否则 Supabase SDK 会直接抛错导致白屏。
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://kjsbpejwcyakpkherdaf.supabase.co'
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY'
 
 // 检测是否在 Capacitor 环境中（iOS/Android）
 const isCapacitor = typeof window !== 'undefined' && 
@@ -64,15 +65,22 @@ const customFetch = (url, options = {}) => {
   return fetch(finalUrl, options)
 }
 
+// Supabase SDK 要求 anon key 为非空字符串，否则会直接抛错（导致 Capacitor 启动白屏）。
+// 这里做一层兜底：即使你没配置真实 key，也先保证 App 能启动（相关联网/登录功能会失败，但不会白屏）。
+const effectiveAnonKey =
+  SUPABASE_ANON_KEY && String(SUPABASE_ANON_KEY).trim().length > 0
+    ? SUPABASE_ANON_KEY
+    : 'YOUR_SUPABASE_ANON_KEY'
+
 // 创建 Supabase 客户端，配置 fetch 选项以处理 CORS
-export const supabase = createClient(getSupabaseUrl(), SUPABASE_ANON_KEY, {
+export const supabase = createClient(getSupabaseUrl(), effectiveAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
   },
   global: {
     headers: {
-      'apikey': SUPABASE_ANON_KEY,
+      'apikey': effectiveAnonKey,
     },
     fetch: customFetch, // 使用自定义 fetch
   },
