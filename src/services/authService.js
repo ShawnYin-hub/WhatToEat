@@ -22,9 +22,20 @@ export const authService = {
         email,
         password,
       })
-      if (error) throw error
+      if (error) {
+        // 统一包装错误信息，便于 UI 显示更友好的提示
+        const wrappedError = new Error(
+          error.message ||
+            error.error_description ||
+            '登录失败，请检查邮箱和密码是否正确',
+        )
+        // 保留原始错误对象，方便调试
+        wrappedError.cause = error
+        throw wrappedError
+      }
       return { data, error: null }
     } catch (error) {
+      console.error('[authService.signIn] 登录失败:', error)
       return { data: null, error }
     }
   },

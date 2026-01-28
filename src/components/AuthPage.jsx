@@ -19,7 +19,9 @@ function AuthPage() {
 
     try {
       if (isLogin) {
-        await signIn(email, password)
+        const result = await signIn(email, password)
+        // 登录成功，这里可以根据需要做跳转；当前由上层根据 user 状态控制
+        console.log('[AuthPage] 登录成功:', result)
       } else {
         await signUp(email, password)
         // 注册成功后切换到登录模式
@@ -27,7 +29,21 @@ function AuthPage() {
         setError(t('auth.signupSuccess'))
       }
     } catch (err) {
-      setError(err.message || t('auth.failed'))
+      console.error('[AuthPage] 登录/注册失败:', err)
+      const message =
+        err?.message ||
+        err?.error_description ||
+        err?.msg ||
+        t('auth.failed')
+      setError(message)
+      // 在 iOS / WebView 中，用 alert 弹出具体原因，方便快速看到
+      try {
+        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+          window.alert(message)
+        }
+      } catch {
+        // ignore alert errors
+      }
     } finally {
       setLoading(false)
     }
