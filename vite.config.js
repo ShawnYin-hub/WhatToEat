@@ -112,6 +112,36 @@ export default defineConfig({
           })
         },
       },
+      // Supabase API 代理（解决 CORS 问题）
+      '/api/supabase': {
+        target: 'https://kjsbpejwcyakpkherdaf.supabase.co',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/supabase/, ''),
+        secure: true,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            // 保留必要的头部
+            proxyReq.setHeader('apikey', process.env.VITE_SUPABASE_ANON_KEY || '')
+          })
+        },
+      },
+    },
+  },
+  preview: {
+    port: 4173,
+    proxy: {
+      // 预览模式也支持 Supabase 代理
+      '/api/supabase': {
+        target: 'https://kjsbpejwcyakpkherdaf.supabase.co',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/supabase/, ''),
+        secure: true,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            proxyReq.setHeader('apikey', process.env.VITE_SUPABASE_ANON_KEY || '')
+          })
+        },
+      },
     },
   },
   // 确保环境变量在构建时可用
