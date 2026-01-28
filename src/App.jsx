@@ -204,7 +204,7 @@ function MainApp() {
         </header>
 
         {/* 中间配置区域卡片 */}
-        <main className="flex-1 px-4 sm:px-6 pb-6 sm:pb-8 relative z-10">
+        <main className="flex-1 px-4 sm:px-6 pt-8 sm:pt-10 pb-6 sm:pb-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
